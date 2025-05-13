@@ -17,7 +17,16 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-hrms-700"></div>
+      </div>
+    );
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -34,7 +43,16 @@ const RoleRoute = ({
   children: React.ReactNode; 
   allowedRoles: string[];
 }) => {
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, loading } = useAuth();
+  
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-hrms-700"></div>
+      </div>
+    );
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -47,12 +65,24 @@ const RoleRoute = ({
   return <AppLayout>{children}</AppLayout>;
 };
 
-const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+// App routes wrapped in AuthProvider
+const AppWithAuth = () => {
+  const { isAuthenticated, loading } = useAuth();
   
   return (
     <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route 
+        path="/login" 
+        element={
+          loading ? (
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-hrms-700"></div>
+            </div>
+          ) : (
+            isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
+          )
+        } 
+      />
       
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/leaves" element={<ProtectedRoute><LeavesPage /></ProtectedRoute>} />
@@ -67,7 +97,6 @@ const AppRoutes = () => {
         } 
       />
       
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -76,13 +105,13 @@ const AppRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <AppWithAuth />
+        </AuthProvider>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

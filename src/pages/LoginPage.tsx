@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,28 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const loginFormSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
 
+const registerFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type LoginFormValues = z.infer<typeof loginFormSchema>;
+type RegisterFormValues = z.infer<typeof registerFormSchema>;
+
 const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   
-  const form = useForm<z.infer<typeof loginFormSchema>>({
+  const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
       email: "",
@@ -27,10 +38,37 @@ const LoginPage: React.FC = () => {
     },
   });
   
-  const onSubmit = async (values: z.infer<typeof loginFormSchema>) => {
-    const success = await login(values.email, values.password);
-    if (success) {
-      navigate("/");
+  const registerForm = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+    },
+  });
+  
+  const onLoginSubmit = async (values: LoginFormValues) => {
+    setIsLoading(true);
+    try {
+      const success = await login(values.email, values.password);
+      if (success) {
+        navigate("/");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const onRegisterSubmit = async (values: RegisterFormValues) => {
+    setIsLoading(true);
+    try {
+      const success = await register(values.email, values.password, values.name);
+      if (success) {
+        // Stay on login page but switch to login tab
+        loginForm.setValue("email", values.email);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -44,64 +82,137 @@ const LoginPage: React.FC = () => {
         
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl">Login</CardTitle>
+            <CardTitle className="text-2xl">Welcome</CardTitle>
             <CardDescription>
-              Enter your email and password to access your account
+              Access your HRMS account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Enter your email" 
-                          {...field} 
-                          autoComplete="email"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="password" 
-                          placeholder="••••••••" 
-                          {...field} 
-                          autoComplete="current-password"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <Button type="submit" className="w-full">
-                  Sign In
-                </Button>
-              </form>
-            </Form>
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="register">Register</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                    <FormField
+                      control={loginForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter your email" 
+                              {...field} 
+                              autoComplete="email"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="password" 
+                              placeholder="••••••••" 
+                              {...field} 
+                              autoComplete="current-password"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Signing in..." : "Sign In"}
+                    </Button>
+                  </form>
+                </Form>
+              </TabsContent>
+              
+              <TabsContent value="register">
+                <Form {...registerForm}>
+                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                    <FormField
+                      control={registerForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter your full name" 
+                              {...field} 
+                              autoComplete="name"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter your email" 
+                              {...field} 
+                              autoComplete="email"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="password" 
+                              placeholder="••••••••" 
+                              {...field} 
+                              autoComplete="new-password"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? "Registering..." : "Register"}
+                    </Button>
+                  </form>
+                </Form>
+              </TabsContent>
+            </Tabs>
           </CardContent>
           <CardFooter className="flex flex-col">
             <div className="text-center text-sm text-muted-foreground mt-2">
-              <p>Demo Accounts:</p>
-              <p>Employee: john@example.com</p>
-              <p>Manager: jane@example.com</p>
-              <p>Admin: admin@example.com</p>
-              <p className="mt-1">(Use any password)</p>
+              <p>For testing, you can create a new account or use:</p>
+              <p>Email: john@example.com</p>
+              <p>Password: password123</p>
+              <p className="mt-1">(Create these accounts in Supabase)</p>
             </div>
           </CardFooter>
         </Card>
