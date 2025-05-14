@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserExpenses, mockExpenses } from "@/data/mockData";
+import { getUserExpenses, createExpense } from "@/services/expenseService";
 import { format } from "date-fns";
 import { Expense, ExpenseType } from "@/types/hrms";
 import { DollarSign, Plus, Filter } from "lucide-react";
@@ -68,22 +68,42 @@ const ExpensesPage: React.FC = () => {
   const { currentUser } = useAuth();
   const [filter, setFilter] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [userExpenses, setUserExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [totalApproved, setTotalApproved] = useState<number>(0);
+  const [totalPending, setTotalPending] = useState<number>(0);
+  
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      if (!currentUser) return;
+      
+      try {
+        setIsLoading(true);
+        const expenses = await getUserExpenses(currentUser.id);
+        const filteredExpenses = expenses.filter(expense => !filter || expense.status === filter);
+        
+        setUserExpenses(filteredExpenses);
+        
+        // Calculate totals
+        setTotalApproved(expenses
+          .filter(expense => expense.status === "approved")
+          .reduce((sum, expense) => sum + expense.amount, 0));
+        
+        setTotalPending(expenses
+          .filter(expense => expense.status === "pending")
+          .reduce((sum, expense) => sum + expense.amount, 0));
+      } catch (error) {
+        console.error("Error fetching expenses:", error);
+        toast.error("Failed to fetch expense requests");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchExpenses();
+  }, [currentUser, filter]);
   
   if (!currentUser) return null;
-  
-  // Filter expenses by status if filter is set
-  const userExpenses = getUserExpenses(currentUser.id).filter(expense => 
-    !filter || expense.status === filter
-  );
-  
-  // Calculate totals
-  const totalApproved = userExpenses
-    .filter(expense => expense.status === "approved")
-    .reduce((sum, expense) => sum + expense.amount, 0);
-  
-  const totalPending = userExpenses
-    .filter(expense => expense.status === "pending")
-    .reduce((sum, expense) => sum + expense.amount, 0);
   
   // Form for creating a new expense request
   const form = useForm<z.infer<typeof expenseFormSchema>>({
@@ -96,25 +116,39 @@ const ExpensesPage: React.FC = () => {
     },
   });
   
-  const onSubmit = (values: z.infer<typeof expenseFormSchema>) => {
-    // In a real app, this would be an API call
-    const newExpense: Expense = {
-      id: `e${mockExpenses.length + 1}`,
-      userId: currentUser.id,
-      type: values.type,
-      amount: values.amount,
-      date: values.date.toISOString().split('T')[0],
-      description: values.description,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
+  const onSubmit = async (values: z.infer<typeof expenseFormSchema>) => {
+    if (!currentUser) return;
     
-    // Add to mock data
-    mockExpenses.push(newExpense);
-    
-    toast.success("Expense submitted successfully");
-    setDialogOpen(false);
-    form.reset();
+    try {
+      await createExpense({
+        userId: currentUser.id,
+        type: values.type,
+        amount: values.amount,
+        date: values.date.toISOString().split('T')[0],
+        description: values.description,
+      });
+      
+      toast.success("Expense submitted successfully");
+      setDialogOpen(false);
+      form.reset();
+      
+      // Refresh the expenses list
+      const updatedExpenses = await getUserExpenses(currentUser.id);
+      const filteredExpenses = updatedExpenses.filter(expense => !filter || expense.status === filter);
+      setUserExpenses(filteredExpenses);
+      
+      // Update totals
+      setTotalApproved(updatedExpenses
+        .filter(expense => expense.status === "approved")
+        .reduce((sum, expense) => sum + expense.amount, 0));
+      
+      setTotalPending(updatedExpenses
+        .filter(expense => expense.status === "pending")
+        .reduce((sum, expense) => sum + expense.amount, 0));
+    } catch (error) {
+      console.error("Error creating expense:", error);
+      toast.error("Failed to submit expense");
+    }
   };
 
   return (

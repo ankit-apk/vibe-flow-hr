@@ -1,12 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  getPendingApprovals, 
-  getUserById, 
-  updateLeaveStatus, 
-  updateExpenseStatus 
-} from "@/data/mockData";
+import { getPendingLeavesForManager, updateLeaveStatus } from "@/services/leaveService";
+import { getPendingExpensesForManager, updateExpenseStatus } from "@/services/expenseService";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Leave, Expense } from "@/types/hrms";
 import { Check, X, Calendar, DollarSign, User } from "lucide-react";
@@ -43,6 +40,56 @@ const ApprovalsPage: React.FC = () => {
     action: "approve",
   });
   const [refreshKey, setRefreshKey] = useState(0);
+  const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [employeeCache, setEmployeeCache] = useState<Record<string, { name: string }>>({});
+  
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      if (!currentUser) return;
+      
+      try {
+        setIsLoading(true);
+        
+        // Fetch pending leaves and expenses
+        const [pendingLeaves, pendingExpenses] = await Promise.all([
+          getPendingLeavesForManager(currentUser.id),
+          getPendingExpensesForManager(currentUser.id)
+        ]);
+        
+        setLeaves(pendingLeaves);
+        setExpenses(pendingExpenses);
+        
+        // Fetch employee information for all requests
+        const userIds = new Set<string>();
+        pendingLeaves.forEach(leave => userIds.add(leave.userId));
+        pendingExpenses.forEach(expense => userIds.add(expense.userId));
+        
+        if (userIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .in('id', Array.from(userIds));
+            
+          if (profiles) {
+            const cache: Record<string, { name: string }> = {};
+            profiles.forEach(profile => {
+              cache[profile.id] = { name: profile.name };
+            });
+            setEmployeeCache(cache);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching approvals:", error);
+        toast.error("Failed to load pending approvals");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchApprovals();
+  }, [currentUser, refreshKey]);
   
   if (!currentUser || (currentUser.role !== "manager" && currentUser.role !== "admin")) {
     return (
@@ -57,7 +104,10 @@ const ApprovalsPage: React.FC = () => {
     );
   }
   
-  const { leaves, expenses } = getPendingApprovals(currentUser.id);
+  // Helper function to get employee name
+  const getEmployeeName = (userId: string) => {
+    return employeeCache[userId]?.name || "Unknown Employee";
+  };
   
   const handleLeaveAction = (leaveId: string, action: "approve" | "reject") => {
     setConfirmDialog({
@@ -77,17 +127,17 @@ const ApprovalsPage: React.FC = () => {
     });
   };
   
-  const confirmAction = () => {
+  const confirmAction = async () => {
     try {
       if (confirmDialog.type === "leave") {
-        updateLeaveStatus(
+        await updateLeaveStatus(
           confirmDialog.id,
           confirmDialog.action === "approve" ? "approved" : "rejected",
           currentUser.id
         );
         toast.success(`Leave request ${confirmDialog.action}d successfully`);
       } else {
-        updateExpenseStatus(
+        await updateExpenseStatus(
           confirmDialog.id,
           confirmDialog.action === "approve" ? "approved" : "rejected",
           currentUser.id
@@ -95,8 +145,9 @@ const ApprovalsPage: React.FC = () => {
         toast.success(`Expense request ${confirmDialog.action}d successfully`);
       }
       setConfirmDialog({ ...confirmDialog, open: false });
-      setRefreshKey(prev => prev + 1); // Force re-render
+      setRefreshKey(prev => prev + 1); // Force re-render to refresh data
     } catch (error) {
+      console.error("Error processing request:", error);
       toast.error("An error occurred. Please try again.");
     }
   };
@@ -109,6 +160,12 @@ const ApprovalsPage: React.FC = () => {
           Review and approve leave and expense requests
         </p>
       </div>
+      
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-hrms-700"></div>
+        </div>
+      ) : null}
       
       <Tabs defaultValue="leaves">
         <TabsList>
@@ -141,7 +198,7 @@ const ApprovalsPage: React.FC = () => {
                   
                   <div className="divide-y">
                     {leaves.map((leave) => {
-                      const employee = getUserById(leave.userId);
+                      const employeeName = getEmployeeName(leave.userId);
                       const startDate = new Date(leave.startDate);
                       const endDate = new Date(leave.endDate);
                       const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
@@ -153,7 +210,7 @@ const ApprovalsPage: React.FC = () => {
                             <div className="h-8 w-8 rounded-full bg-hrms-100 flex items-center justify-center text-hrms-700 mr-2">
                               <User className="h-4 w-4" />
                             </div>
-                            {employee?.name}
+                            {employeeName}
                           </div>
                           <div className="capitalize">{leave.type}</div>
                           <div>
@@ -215,7 +272,7 @@ const ApprovalsPage: React.FC = () => {
                   
                   <div className="divide-y">
                     {expenses.map((expense) => {
-                      const employee = getUserById(expense.userId);
+                      const employeeName = getEmployeeName(expense.userId);
                       
                       return (
                         <div key={expense.id} className="grid grid-cols-6 p-4 text-sm">
@@ -223,7 +280,7 @@ const ApprovalsPage: React.FC = () => {
                             <div className="h-8 w-8 rounded-full bg-hrms-100 flex items-center justify-center text-hrms-700 mr-2">
                               <User className="h-4 w-4" />
                             </div>
-                            {employee?.name}
+                            {employeeName}
                           </div>
                           <div className="capitalize">{expense.type}</div>
                           <div>{format(new Date(expense.date), "MMM dd, yyyy")}</div>

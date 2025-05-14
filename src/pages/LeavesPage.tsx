@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserLeaves, mockLeaves } from "@/data/mockData";
+import { getUserLeaves, createLeave } from "@/services/leaveService";
 import { format } from "date-fns";
 import { Leave, LeaveType } from "@/types/hrms";
 import { Calendar, Plus, Filter } from "lucide-react";
@@ -68,13 +68,29 @@ const LeavesPage: React.FC = () => {
   const { currentUser } = useAuth();
   const [filter, setFilter] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [userLeaves, setUserLeaves] = useState<Leave[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      if (!currentUser) return;
+      
+      try {
+        setIsLoading(true);
+        const leaves = await getUserLeaves(currentUser.id);
+        setUserLeaves(leaves.filter(leave => !filter || leave.status === filter));
+      } catch (error) {
+        console.error("Error fetching leaves:", error);
+        toast.error("Failed to fetch leave requests");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchLeaves();
+  }, [currentUser, filter]);
   
   if (!currentUser) return null;
-  
-  // Filter leaves by status if filter is set
-  const userLeaves = getUserLeaves(currentUser.id).filter(leave => 
-    !filter || leave.status === filter
-  );
   
   // Form for creating a new leave request
   const form = useForm<z.infer<typeof leaveFormSchema>>({
@@ -85,25 +101,29 @@ const LeavesPage: React.FC = () => {
     },
   });
   
-  const onSubmit = (values: z.infer<typeof leaveFormSchema>) => {
-    // In a real app, this would be an API call
-    const newLeave: Leave = {
-      id: `l${mockLeaves.length + 1}`,
-      userId: currentUser.id,
-      type: values.type,
-      startDate: values.startDate.toISOString().split('T')[0],
-      endDate: values.endDate.toISOString().split('T')[0],
-      reason: values.reason,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
+  const onSubmit = async (values: z.infer<typeof leaveFormSchema>) => {
+    if (!currentUser) return;
     
-    // Add to mock data
-    mockLeaves.push(newLeave);
-    
-    toast.success("Leave request submitted successfully");
-    setDialogOpen(false);
-    form.reset();
+    try {
+      await createLeave({
+        userId: currentUser.id,
+        type: values.type,
+        startDate: values.startDate.toISOString().split('T')[0],
+        endDate: values.endDate.toISOString().split('T')[0],
+        reason: values.reason,
+      });
+      
+      toast.success("Leave request submitted successfully");
+      setDialogOpen(false);
+      form.reset();
+      
+      // Refresh the leaves list
+      const updatedLeaves = await getUserLeaves(currentUser.id);
+      setUserLeaves(updatedLeaves.filter(leave => !filter || leave.status === filter));
+    } catch (error) {
+      console.error("Error creating leave request:", error);
+      toast.error("Failed to submit leave request");
+    }
   };
 
   return (

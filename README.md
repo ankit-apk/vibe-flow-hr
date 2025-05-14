@@ -1,73 +1,78 @@
-# Welcome to your Lovable project
+# VibeFlow HR
 
-## Project info
+A modern HR management application built with React, TypeScript, and Supabase.
 
-**URL**: https://lovable.dev/projects/172f0ef5-1f82-4533-a808-7e19d5f61f23
+## Features
 
-## How can I edit this code?
+- User authentication and role-based access control
+- Leave management (request, approve, reject)
+- Expense management (submit, approve, reject)
+- Dashboard with analytics
+- Modern UI with shadcn/ui components
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui components
+- Supabase (Authentication, Database)
+- React Router
+- React Hook Form with Zod validation
+- React Query
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/172f0ef5-1f82-4533-a808-7e19d5f61f23) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm
+- Supabase account and project
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Setup
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Clone the repository:
 
-Follow these steps:
+```bash
+git clone https://github.com/yourusername/vibe-flow-hr.git
+cd vibe-flow-hr
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+2. Install dependencies:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+npm install
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Set up your Supabase project:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+   - Create a new project on [Supabase](https://supabase.com)
+   - Run the setup script:
+
+   ```bash
+   npm run setup
+   ```
+
+   - Follow the prompts to enter your Supabase URL and anon key
+   - The script will help you apply the database migrations
+
+4. Start the development server:
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Authentication Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Enable email/password authentication in your Supabase project.
+2. **Important**: For users to be active immediately after registration (without email verification), go to your Supabase project settings -> Authentication -> Providers, and disable "Confirm email".
+3. Configure email templates (e.g., for password reset) as needed.
+4. Create test users through the Supabase authentication UI or programmatically if desired.
 
-**Use GitHub Codespaces**
+## Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Build the application:
 
-## What technologies are used for this project?
+```
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/172f0ef5-1f82-4533-a808-7e19d5f61f23) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+```

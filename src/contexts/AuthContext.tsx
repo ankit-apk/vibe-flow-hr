@@ -1,9 +1,8 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { User, Role } from "../types/hrms";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { ProfileRow, mapProfileRowToUser } from "@/types/supabase";
+import { mapProfileRowToUser, ProfileWithLeaveBalanceRow } from "@/types/supabase";
 import { useNavigate } from "react-router-dom";
 
 type AuthContextType = {
@@ -49,19 +48,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 .from('profiles')
                 .select('*, leave_balances(*)')
                 .eq('id', session.user.id)
-                .single();
+                .single<ProfileWithLeaveBalanceRow>();
                 
               if (error || !profile) {
                 setCurrentUser(null);
                 setIsAuthenticated(false);
                 console.error("Failed to load profile:", error);
               } else {
-                // Convert profile to our User type
                 const user = mapProfileRowToUser(profile);
                 
                 // Add leave balance if available
-                if (profile.leave_balances && profile.leave_balances.length > 0) {
-                  const balance = profile.leave_balances[0];
+                if (profile.leave_balances) {
+                  const balance = profile.leave_balances;
                   user.leaveBalance = {
                     annual: balance.annual,
                     sick: balance.sick,
@@ -161,8 +159,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       
       toast({
-        title: "Registration successful",
-        description: "Please check your email for verification",
+        title: "Registration successful!",
+        description: "You are now registered and logged in.",
       });
       return true;
     } catch (error) {
@@ -210,12 +208,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .from('profiles')
         .select('*, leave_balances(*)')
         .eq('id', currentUser.id)
-        .single();
+        .single<ProfileWithLeaveBalanceRow>();
       
       if (profile) {
         const updatedUser = mapProfileRowToUser(profile);
-        if (profile.leave_balances && profile.leave_balances.length > 0) {
-          const balance = profile.leave_balances[0];
+        if (profile.leave_balances) {
+          const balance = profile.leave_balances;
           updatedUser.leaveBalance = {
             annual: balance.annual,
             sick: balance.sick,

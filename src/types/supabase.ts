@@ -1,11 +1,16 @@
-
-import { Database } from "@/integrations/supabase/types";
+import { Database, Tables } from "@/integrations/supabase/types";
+import { User, Role } from "./hrms"; // Added import for User and Role
 
 // Export convenient type aliases based on the generated Database type
-export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
-export type LeaveRow = Database["public"]["Tables"]["leaves"]["Row"];
-export type LeaveBalanceRow = Database["public"]["Tables"]["leave_balances"]["Row"];
-export type ExpenseRow = Database["public"]["Tables"]["expenses"]["Row"];
+export type ProfileRow = Tables<'profiles'>;
+export type LeaveRow = Tables<'leaves'>;
+export type LeaveBalanceRow = Tables<'leave_balances'>;
+export type ExpenseRow = Tables<'expenses'>;
+
+// New type for profile with its one-to-one leave_balances record
+export type ProfileWithLeaveBalanceRow = ProfileRow & {
+  leave_balances: LeaveBalanceRow | null; 
+};
 
 // Map Supabase types to our application types
 export const mapProfileRowToUser = (profile: ProfileRow): User => {
