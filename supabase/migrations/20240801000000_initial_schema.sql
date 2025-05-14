@@ -122,4 +122,39 @@ CREATE POLICY "Managers can update expenses they manage"
   ON public.expenses FOR UPDATE 
   USING (auth.uid() IN (
     SELECT manager_id FROM public.profiles WHERE id = user_id
-  )); 
+  ));
+
+-- Automatically create profile record when a new user registers
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+  RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, name, email, role, department, position)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.user_metadata->>'name', ''),
+    NEW.email,
+    COALESCE(NEW.user_metadata->>'role', 'employee'),
+    'Employee',
+    'Employee'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Automatically create leave balance record when a new profile is inserted
+CREATE OR REPLACE FUNCTION public.handle_new_leave_balance()
+  RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.leave_balances (user_id)
+  VALUES (NEW.id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_profile_insert
+  AFTER INSERT ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_leave_balance(); 

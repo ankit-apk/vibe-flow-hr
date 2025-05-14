@@ -33,48 +33,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
+  // Helper to fetch and set user profile
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*, leave_balances(*)')
+        .eq('id', userId)
+        .single<ProfileWithLeaveBalanceRow>();
+      if (error || !profile) throw error || new Error('Profile not found');
+      const user = mapProfileRowToUser(profile);
+      if (profile.leave_balances) {
+        const balance = profile.leave_balances;
+        user.leaveBalance = {
+          annual: balance.annual,
+          sick: balance.sick,
+          personal: balance.personal,
+        };
+      }
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+    } catch (err) {
+      console.error('Error loading user profile:', err);
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+    }
+  };
+
   useEffect(() => {
-    // Initialize auth state from Supabase
+    let subscription: any;
     const initializeAuth = async () => {
       setLoading(true);
-      
-      // Set up auth state listener
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (session && session.user) {
-            // Load user profile
-            try {
-              const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*, leave_balances(*)')
-                .eq('id', session.user.id)
-                .single<ProfileWithLeaveBalanceRow>();
-                
-              if (error || !profile) {
-                setCurrentUser(null);
-                setIsAuthenticated(false);
-                console.error("Failed to load profile:", error);
-              } else {
-                const user = mapProfileRowToUser(profile);
-                
-                // Add leave balance if available
-                if (profile.leave_balances) {
-                  const balance = profile.leave_balances;
-                  user.leaveBalance = {
-                    annual: balance.annual,
-                    sick: balance.sick,
-                    personal: balance.personal
-                  };
-                }
-                
-                setCurrentUser(user);
-                setIsAuthenticated(true);
-              }
-            } catch (error) {
-              console.error("Error loading user profile:", error);
-              setCurrentUser(null);
-              setIsAuthenticated(false);
-            }
+      // Load initial session if exists
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
+      setLoading(false);
+
+      // Subscribe to auth state changes
+      const { data } = supabase.auth.onAuthStateChange(
+        async (_event, session) => {
+          setLoading(true);
+          if (session?.user) {
+            await fetchUserProfile(session.user.id);
           } else {
             setCurrentUser(null);
             setIsAuthenticated(false);
@@ -82,21 +89,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setLoading(false);
         }
       );
-      
-      // Check for existing session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Initial auth check is handled by the listener
-      if (!session) {
-        setLoading(false);
-      }
-      
-      return () => {
-        subscription.unsubscribe();
-      };
+      subscription = data.subscription;
     };
-    
     initializeAuth();
+    return () => subscription?.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {

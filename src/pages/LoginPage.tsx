@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,7 @@ const LoginPage: React.FC = () => {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -66,6 +66,8 @@ const LoginPage: React.FC = () => {
       if (success) {
         // Stay on login page but switch to login tab
         loginForm.setValue("email", values.email);
+        // Move to login tab
+        setActiveTab("login");
       }
     } finally {
       setIsLoading(false);
@@ -88,7 +90,11 @@ const LoginPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as "login" | "register")}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
