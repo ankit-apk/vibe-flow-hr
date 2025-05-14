@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserLeaves, createLeave } from "@/services/leaveService";
@@ -49,6 +48,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { leaveTypeOptions } from "@/data/formOptions";
 
 // Form schema for leave request
 const leaveFormSchema = z.object({
@@ -202,10 +202,11 @@ const LeavesPage: React.FC = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="annual">Annual Leave</SelectItem>
-                            <SelectItem value="sick">Sick Leave</SelectItem>
-                            <SelectItem value="personal">Personal Leave</SelectItem>
-                            <SelectItem value="unpaid">Unpaid Leave</SelectItem>
+                            {leaveTypeOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

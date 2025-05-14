@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getPendingLeavesForManager, updateLeaveStatus } from "@/services/leaveService";
-import { getPendingExpensesForManager, updateExpenseStatus } from "@/services/expenseService";
+import { getAllPendingLeaves, updateLeaveStatus } from "@/services/leaveService";
+import { getAllPendingExpenses, updateExpenseStatus } from "@/services/expenseService";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Leave, Expense } from "@/types/hrms";
@@ -52,10 +51,10 @@ const ApprovalsPage: React.FC = () => {
       try {
         setIsLoading(true);
         
-        // Fetch pending leaves and expenses
+        // Fetch all pending leaves and expenses for approver
         const [pendingLeaves, pendingExpenses] = await Promise.all([
-          getPendingLeavesForManager(currentUser.id),
-          getPendingExpensesForManager(currentUser.id)
+          getAllPendingLeaves(),
+          getAllPendingExpenses(),
         ]);
         
         setLeaves(pendingLeaves);

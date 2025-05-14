@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Role } from "@/types/hrms";
 
 const loginFormSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -19,10 +20,15 @@ const registerFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  inviteCode: z.string().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
 type RegisterFormValues = z.infer<typeof registerFormSchema>;
+
+// Environment keys for signup role elevation
+const ADMIN_SIGNUP_CODE = import.meta.env.VITE_ADMIN_SIGNUP_KEY;
+const HR_SIGNUP_CODE = import.meta.env.VITE_HR_SIGNUP_KEY;
 
 const LoginPage: React.FC = () => {
   const { login, register } = useAuth();
@@ -44,6 +50,7 @@ const LoginPage: React.FC = () => {
       name: "",
       email: "",
       password: "",
+      inviteCode: "",
     },
   });
   
@@ -62,7 +69,16 @@ const LoginPage: React.FC = () => {
   const onRegisterSubmit = async (values: RegisterFormValues) => {
     setIsLoading(true);
     try {
-      const success = await register(values.email, values.password, values.name);
+      // Determine role based on invite code
+      let signupRole: Role = "employee";
+      if (values.inviteCode === ADMIN_SIGNUP_CODE) signupRole = "admin";
+      else if (values.inviteCode === HR_SIGNUP_CODE) signupRole = "manager";
+      const success = await register(
+        values.email,
+        values.password,
+        values.name,
+        signupRole
+      );
       if (success) {
         // Stay on login page but switch to login tab
         loginForm.setValue("email", values.email);
@@ -198,6 +214,23 @@ const LoginPage: React.FC = () => {
                               placeholder="••••••••" 
                               {...field} 
                               autoComplete="new-password"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="inviteCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Invite Code (optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter invite code"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />

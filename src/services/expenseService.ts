@@ -112,4 +112,18 @@ const mapExpenseRowToExpense = (row: Tables<'expenses'>): Expense => ({
   reviewedBy: row.reviewed_by || undefined,
   reviewedAt: row.reviewed_at || undefined,
   createdAt: row.created_at
-}); 
+});
+
+// Export a helper to fetch all pending expenses (for admins)
+export const getAllPendingExpenses = async (): Promise<Expense[]> => {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error("Error fetching all pending expenses:", error);
+    throw error;
+  }
+  return data.map(mapExpenseRowToExpense);
+}; 

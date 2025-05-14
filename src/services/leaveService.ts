@@ -112,4 +112,18 @@ const mapLeaveRowToLeave = (row: Tables<'leaves'>): Leave => ({
   reviewedBy: row.reviewed_by || undefined,
   reviewedAt: row.reviewed_at || undefined,
   createdAt: row.created_at
-}); 
+});
+
+// Export a helper to fetch all pending leaves (for admins)
+export const getAllPendingLeaves = async (): Promise<Leave[]> => {
+  const { data, error } = await supabase
+    .from('leaves')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error("Error fetching all pending leaves:", error);
+    throw error;
+  }
+  return data.map(mapLeaveRowToLeave);
+}; 

@@ -60,16 +60,23 @@ ALTER TABLE public.leave_balances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leaves ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 
--- Profiles policies
-CREATE POLICY "Users can view their own profile" 
-  ON public.profiles FOR SELECT 
-  USING (auth.uid() = id);
+-- Clean up any old profile SELECT policies
+DROP POLICY IF EXISTS "Managers can view profiles they manage" ON public.profiles;
+DROP POLICY IF EXISTS "HR can view all profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Profiles: self, manager, admin view" ON public.profiles;
 
-CREATE POLICY "Managers can view profiles they manage" 
-  ON public.profiles FOR SELECT 
-  USING (auth.uid() IN (
-    SELECT manager_id FROM public.profiles WHERE id = auth.uid()
-  ));
+-- New policy: employees, managers, or admins can SELECT any profile they need
+CREATE POLICY "Profiles: self or approver view"
+  ON public.profiles FOR SELECT
+  USING (
+    -- you can always read your own row
+    auth.uid() = id
+    -- managers and admins can read all rows
+    OR EXISTS (
+      SELECT 1 FROM public.profiles AS p
+      WHERE p.id = auth.uid() AND p.role IN ('manager', 'admin')
+    )
+  );
 
 -- Leave balances policies
 CREATE POLICY "Users can view their own leave balance" 
@@ -123,6 +130,46 @@ CREATE POLICY "Managers can update expenses they manage"
   USING (auth.uid() IN (
     SELECT manager_id FROM public.profiles WHERE id = user_id
   ));
+
+-- Managers can view all leaves
+CREATE POLICY "Managers can view all leaves" 
+  ON public.leaves FOR SELECT 
+  USING ((SELECT role = 'manager' FROM public.profiles WHERE id = auth.uid()));
+
+-- Managers can update all leaves
+CREATE POLICY "Managers can update all leaves"
+  ON public.leaves FOR UPDATE
+  USING ((SELECT role = 'manager' FROM public.profiles WHERE id = auth.uid()));
+
+-- Managers can view all expenses
+CREATE POLICY "Managers can view all expenses"
+  ON public.expenses FOR SELECT
+  USING ((SELECT role = 'manager' FROM public.profiles WHERE id = auth.uid()));
+
+-- Managers can update all expenses
+CREATE POLICY "Managers can update all expenses"
+  ON public.expenses FOR UPDATE
+  USING ((SELECT role = 'manager' FROM public.profiles WHERE id = auth.uid()));
+
+-- Admins can view all leaves
+CREATE POLICY "Admins can view all leaves"
+  ON public.leaves FOR SELECT
+  USING ((SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()));
+
+-- Admins can update all leaves
+CREATE POLICY "Admins can update all leaves"
+  ON public.leaves FOR UPDATE
+  USING ((SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()));
+
+-- Admins can view all expenses
+CREATE POLICY "Admins can view all expenses"
+  ON public.expenses FOR SELECT
+  USING ((SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()));
+
+-- Admins can update all expenses
+CREATE POLICY "Admins can update all expenses"
+  ON public.expenses FOR UPDATE
+  USING ((SELECT role = 'admin' FROM public.profiles WHERE id = auth.uid()));
 
 -- Automatically create profile record when a new user registers
 CREATE OR REPLACE FUNCTION public.handle_new_user()

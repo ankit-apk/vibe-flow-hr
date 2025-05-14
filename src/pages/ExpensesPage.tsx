@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserExpenses, createExpense } from "@/services/expenseService";
@@ -50,6 +49,7 @@ import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { expenseTypeOptions } from "@/data/formOptions";
 
 // Form schema for expense request
 const expenseFormSchema = z.object({
@@ -227,10 +227,11 @@ const ExpensesPage: React.FC = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="travel">Travel</SelectItem>
-                            <SelectItem value="office">Office Supplies</SelectItem>
-                            <SelectItem value="meals">Meals & Entertainment</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            {expenseTypeOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
