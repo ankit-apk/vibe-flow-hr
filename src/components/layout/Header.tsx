@@ -50,10 +50,10 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="relative">
+          {/* <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5 text-muted-foreground" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full"></span>
-          </Button>
+          </Button> */}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -70,12 +70,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuItem>Profile</DropdownMenuItem>
+              {/* <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator /> */}
               
               {/* For demo purposes - role switching */}
-              <DropdownMenuLabel>Demo Controls</DropdownMenuLabel>
+              {/* <DropdownMenuLabel>Demo Controls</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => switchRole("employee")}>
                 Switch to Employee
               </DropdownMenuItem>
@@ -85,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               <DropdownMenuItem onClick={() => switchRole("admin")}>
                 Switch to Admin
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator /> */}
               
               <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>

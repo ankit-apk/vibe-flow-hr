@@ -58,24 +58,24 @@ const navItems: NavItem[] = [
     href: "/approvals",
     roles: ["manager", "admin", "hr"],
   },
-  {
-    label: "Leave Balances",
-    icon: Users,
-    href: "/leave-balances",
-    roles: ["manager", "admin", "hr"],
-  },
-  {
-    label: "Department",
-    icon: Briefcase,
-    href: "/department",
-    roles: ["manager", "admin"],
-  },
-  {
-    label: "Settings",
-    icon: Settings,
-    href: "/settings",
-    roles: ["admin"],
-  },
+  // {
+  //   label: "Leave Balances",
+  //   icon: Users,
+  //   href: "/leave-balances",
+  //   roles: ["manager", "admin", "hr"],
+  // },
+  // {
+  //   label: "Department",
+  //   icon: Briefcase,
+  //   href: "/department",
+  //   roles: ["manager", "admin"],
+  // },
+  // {
+  //   label: "Settings",
+  //   icon: Settings,
+  //   href: "/settings",
+  //   roles: ["admin"],
+  // },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
