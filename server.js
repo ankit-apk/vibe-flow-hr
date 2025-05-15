@@ -132,14 +132,24 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
-    // req.user is populated by authenticateToken middleware (contains userId, role, email from JWT)
-    if (!req.user || !req.user.userId) { // Ensure userId exists in token payload
+    if (!req.user || !req.user.userId) {
       return res.status(400).json({ message: 'User ID not found in token' });
     }
-    // Fetch profile using userId from token, assuming profiles.id is the target
-    const { rows } = await pool.query('SELECT id, name AS full_name, role, email FROM profiles WHERE id = $1', [req.user.userId]);
-    if (rows.length > 0) {
-      res.json(rows[0]);
+    
+    const profileResult = await pool.query(
+      `SELECT p.id, p.name, p.email, p.role, p.department, p.position, p.avatar_url, p.manager_id, 
+              lb.annual, lb.sick, lb.personal
+       FROM profiles p
+       LEFT JOIN leave_balances lb ON p.id = lb.user_id
+       WHERE p.id = $1`,
+      [req.user.userId]
+    );
+
+    if (profileResult.rows.length > 0) {
+      const userProfile = profileResult.rows[0];
+      // Remove password_hash if it was accidentally included, though SELECT p.* was avoided here
+      // delete userProfile.password_hash; // Not strictly needed due to explicit select
+      res.json(userProfile);
     } else {
       res.status(404).json({ message: 'Profile not found for this user' });
     }
@@ -286,6 +296,92 @@ app.put('/api/leave-balances/:userId', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error updating leave balances:', error);
     res.status(500).json({ message: 'Error updating leave balances' });
+  }
+});
+
+// New dedicated endpoint to update leave status and deduct balance if approved
+app.put('/api/leaves/:leaveId/status', authenticateToken, async (req, res) => {
+  const { leaveId } = req.params;
+  const { status, remarks } = req.body; // reviewerId comes from token
+  const reviewerId = req.user.userId; // Assuming JWT payload has userId which is the profile ID
+
+  if (!['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status value.' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Update the leave status, reviewer, remarks, and reviewed_at
+    const updatedLeaveResult = await client.query(
+      `UPDATE leaves 
+       SET status = $1, reviewed_by = $2, reviewed_at = NOW(), remarks = $3
+       WHERE id = $4
+       RETURNING *`,
+      [status, reviewerId, remarks || null, leaveId]
+    );
+
+    if (updatedLeaveResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Leave request not found.' });
+    }
+
+    const updatedLeave = updatedLeaveResult.rows[0];
+
+    // 2. If approved, deduct from leave_balances
+    if (status === 'approved') {
+      const leaveType = updatedLeave.type.toLowerCase(); // e.g., 'annual', 'sick', 'personal'
+      const userId = updatedLeave.user_id;
+      
+      // Calculate leave duration (inclusive of start and end dates)
+      const startDate = new Date(updatedLeave.start_date);
+      const endDate = new Date(updatedLeave.end_date);
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const durationDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24)) + 1;
+
+      if (durationDays <= 0) {
+        // This case should ideally be validated at leave creation, but good to check
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Leave duration must be at least 1 day.' });
+      }
+
+      // Check if the leave type is one that deducts from balances
+      if (['annual', 'sick', 'personal'].includes(leaveType)) {
+        // Dynamically construct the column name for the update query
+        // Ensure leaveType is a valid column name to prevent SQL injection, though here it's from DB value.
+        const balanceUpdateQuery = 
+          `UPDATE leave_balances 
+           SET ${leaveType} = ${leaveType} - $1, updated_at = NOW()
+           WHERE user_id = $2`;
+        
+        const balanceUpdateResult = await client.query(balanceUpdateQuery, [durationDays, userId]);
+
+        if (balanceUpdateResult.rowCount === 0) {
+          // This implies the user might not have a leave_balance record, or an issue occurred.
+          // For robustness, you might create one, or log an error.
+          await client.query('ROLLBACK');
+          console.error(`Failed to update leave balance for user ${userId}, type ${leaveType}. No leave_balance record updated.`);
+          // Not necessarily a client error if leave was approved but balance update failed systemically
+          return res.status(500).json({ message: 'Leave approved, but failed to update balance record.' });
+        }
+      } else if (leaveType === 'unpaid') {
+        // No balance deduction for unpaid leave, do nothing here
+      } else {
+        // Unknown leave type for balance deduction
+        console.warn(`Leave type "${leaveType}" not recognized for balance deduction.`);
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json(updatedLeave); // Return the updated leave object
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating leave status/balance:', error);
+    res.status(500).json({ message: 'Error processing leave status update.' });
+  } finally {
+    client.release();
   }
 });
 

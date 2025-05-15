@@ -1,6 +1,6 @@
-import { supabase } from "@/integrations/supabase/client";
 import { query } from "@/db/client";
 import { Leave, LeaveType, LeaveStatus } from "@/types/hrms";
+import apiClient from "./apiClient"; // Import the default apiClient instance
 
 // Get leaves for a specific user
 export const getUserLeaves = async (userId: string): Promise<Leave[]> => {
@@ -74,19 +74,21 @@ export const createLeave = async (leave: Omit<Leave, 'id' | 'createdAt' | 'statu
 export const updateLeaveStatus = async (
   leaveId: string, 
   status: "approved" | "rejected", 
-  reviewerId: string,
+  reviewerId: string, // Though reviewerId is now taken from token on backend, 
+                      // keeping it in signature for now if other parts of app expect it,
+                      // but it won't be explicitly sent in the PUT request body if backend derives it.
+                      // Or, we can remove it if no longer needed by any caller.
+                      // For this change, let's assume it might still be logged or used by caller, but not sent.
   remarks?: string
 ): Promise<Leave> => {
   try {
-    const result = await query(
-      `UPDATE leaves 
-       SET status = $1, reviewed_by = $2, reviewed_at = $3, remarks = $4
-       WHERE id = $5
-       RETURNING *`,
-      [status, reviewerId, new Date().toISOString(), remarks || null, leaveId]
-    );
-    
-    return mapDbRowToLeave(result.rows[0]);
+    // Use the new dedicated endpoint
+    const response = await apiClient.put<Leave>(`/leaves/${leaveId}/status`, {
+      status,
+      remarks: remarks || null,
+      // reviewerId is not sent; backend uses token.
+    });
+    return mapDbRowToLeave(response.data); // Assuming response.data is the updated leave row
   } catch (error) {
     console.error("Error updating leave status:", error);
     throw error;
