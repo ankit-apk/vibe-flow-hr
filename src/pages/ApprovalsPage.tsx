@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllPendingLeaves, updateLeaveStatus } from "@/services/leaveService";
 import { getAllPendingExpenses, updateExpenseStatus } from "@/services/expenseService";
-import { getProfile } from "@/services/apiClient";
+import { getProfile } from "@/services/apiClient"; 
 import { format } from "date-fns";
 import { Leave, Expense } from "@/types/hrms";
 import { Check, X, Calendar, DollarSign, User } from "lucide-react";
@@ -29,6 +29,8 @@ import { Label } from "@/components/ui/label";
 
 const ApprovalsPage: React.FC = () => {
   const { currentUser } = useAuth();
+  console.log("[ApprovalsPage] Rendering. Current User:", currentUser);
+
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     type: "leave" | "expense";
@@ -49,16 +51,25 @@ const ApprovalsPage: React.FC = () => {
   const [employeeCache, setEmployeeCache] = useState<Record<string, { name: string }>>({});
   
   useEffect(() => {
+    console.log("[ApprovalsPage] useEffect triggered. Current User inside useEffect:", currentUser);
+
     const fetchApprovals = async () => {
-      if (!currentUser) return;
+      if (!currentUser) {
+        console.log("[ApprovalsPage] fetchApprovals: currentUser is null, returning early.");
+        return;
+      }
       
       try {
+        console.log("[ApprovalsPage] fetchApprovals: Starting to fetch data...");
         setIsLoading(true);
         
         const [pendingLeaves, pendingExpenses] = await Promise.all([
           getAllPendingLeaves(),
           getAllPendingExpenses(),
         ]);
+
+        console.log("[ApprovalsPage] Fetched Pending Leaves:", pendingLeaves);
+        console.log("[ApprovalsPage] Fetched Pending Expenses:", pendingExpenses);
         
         setLeaves(pendingLeaves);
         setExpenses(pendingExpenses);
@@ -81,9 +92,10 @@ const ApprovalsPage: React.FC = () => {
           setEmployeeCache(cache);
         }
       } catch (error) {
-        console.error("Error fetching approvals or profiles:", error);
+        console.error("[ApprovalsPage] Error in fetchApprovals:", error);
         toast.error("Failed to load pending approvals or employee details");
       } finally {
+        console.log("[ApprovalsPage] fetchApprovals: Finished fetching, setting isLoading to false.");
         setIsLoading(false);
       }
     };
@@ -92,6 +104,7 @@ const ApprovalsPage: React.FC = () => {
   }, [currentUser, refreshKey]);
   
   if (!currentUser || (currentUser.role !== "manager" && currentUser.role !== "admin" && currentUser.role !== "hr")) {
+    console.log("[ApprovalsPage] Access Denied. currentUser:", currentUser);
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
@@ -103,6 +116,8 @@ const ApprovalsPage: React.FC = () => {
       </div>
     );
   }
+  
+  console.log("[ApprovalsPage] Rendering main content. Leaves:", leaves.length, "Expenses:", expenses.length);
   
   // Helper function to get employee name
   const getEmployeeName = (userId: string) => {
