@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Menu, Bell, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,12 +21,15 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { currentUser, logout, switchRole } = useAuth();
   const isMobile = useIsMobile();
   
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map(n => n[0])
-      .join("")
-      .toUpperCase();
+  const getInitials = (name?: string) => {
+    if (name && typeof name === 'string' && name.trim() !== '') {
+      return name
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .toUpperCase();
+    }
+    return "U";
   };
 
   return (
@@ -58,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               <Button variant="ghost" className="flex items-center space-x-2">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-hrms-500 text-white">
-                    {currentUser ? getInitials(currentUser.name) : "U"}
+                    {currentUser && currentUser.name ? getInitials(currentUser.name) : getInitials()}
                   </AvatarFallback>
                 </Avatar>
                 {!isMobile && (

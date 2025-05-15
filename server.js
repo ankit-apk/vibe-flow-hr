@@ -233,35 +233,59 @@ app.post('/api/profiles', authenticateToken, async (req, res) => {
 // Consider adding pagination and filtering in a real application
 app.get('/api/profiles', authenticateToken, async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT id, user_id, full_name, role, email FROM profiles');
+    const { rows } = await pool.query(`
+      SELECT
+        p.id, p.name, p.email, p.role, p.department, p.position, p.avatar_url, p.manager_id,
+        p.created_at, p.updated_at,
+        lb.annual, lb.sick, lb.personal
+      FROM profiles p
+      LEFT JOIN leave_balances lb ON p.id = lb.user_id
+      ORDER BY p.name;
+    `);
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching profiles:', error);
+    console.error('Error fetching all profiles with balances:', error);
     res.status(500).json({ message: 'Error fetching profiles' });
   }
 });
 
-// Get a single profile by ID
-app.get('/api/profiles/:id', authenticateToken, async (req, res) => {
+// Endpoint to update leave balances for a specific user (HR/Admin only)
+app.put('/api/leave-balances/:userId', authenticateToken, async (req, res) => {
+  const { userId } = req.params;
+  const { annual, sick, personal } = req.body;
+  const { role: requesterRole } = req.user; // Get role from JWT
+
+  if (requesterRole !== 'hr' && requesterRole !== 'admin') {
+    return res.status(403).json({ message: 'Forbidden: Insufficient privileges' });
+  }
+
+  if (typeof annual !== 'number' || typeof sick !== 'number' || typeof personal !== 'number') {
+    return res.status(400).json({ message: 'Invalid leave balance values. Must be numbers.' });
+  }
+  if (annual < 0 || sick < 0 || personal < 0) {
+    return res.status(400).json({ message: 'Leave balance values cannot be negative.' });
+  }
+
   try {
-    const { id } = req.params;
     const result = await pool.query(
-      `SELECT p.id, p.name, p.email, p.role, p.department, p.position, p.avatar_url, p.manager_id, p.created_at, p.updated_at,
-              lb.annual, lb.sick, lb.personal 
-       FROM profiles p
-       LEFT JOIN leave_balances lb ON p.id = lb.user_id
-       WHERE p.id = $1`,
-      [id]
+      `UPDATE leave_balances
+       SET annual = $1, sick = $2, personal = $3, updated_at = NOW()
+       WHERE user_id = $4
+       RETURNING *`,
+      [annual, sick, personal, userId]
     );
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Profile not found' });
+      // This could happen if the user_id is valid but has no leave_balance record yet (should be rare if created on profile creation)
+      // Optionally, insert a new record, or return 404.
+      // For now, assume record exists if user_id is valid.
+      return res.status(404).json({ message: 'Leave balance record not found for this user.' });
     }
-    
+
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching profile:', error);
-    res.status(500).json({ error: 'Error fetching profile' });
+    console.error('Error updating leave balances:', error);
+    res.status(500).json({ message: 'Error updating leave balances' });
   }
 });
 

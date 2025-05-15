@@ -10,6 +10,7 @@ import LeavesPage from "@/pages/LeavesPage";
 import ExpensesPage from "@/pages/ExpensesPage";
 import ApprovalsPage from "@/pages/ApprovalsPage";
 import LeaveBalancesPage from "@/pages/LeaveBalancesPage";
+import EmployeeListPage from "@/pages/EmployeeListPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
@@ -102,6 +103,15 @@ const AppWithAuth = () => {
         element={
           <RoleRoute allowedRoles={["manager", "admin", "hr"]}>
             <LeaveBalancesPage />
+          </RoleRoute>
+        } 
+      />
+      
+      <Route 
+        path="/employees" 
+        element={
+          <RoleRoute allowedRoles={["manager", "admin", "hr"]}>
+            <EmployeeListPage />
           </RoleRoute>
         } 
       />

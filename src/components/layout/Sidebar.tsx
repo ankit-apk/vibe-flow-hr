@@ -35,6 +35,12 @@ const navItems: NavItem[] = [
     roles: ["employee", "manager", "admin", "hr"],
   },
   {
+    label: "Employee Management",
+    icon: Users,
+    href: "/employees",
+    roles: ["manager", "admin", "hr"],
+  },
+  {
     label: "Leave Management",
     icon: Calendar,
     href: "/leaves",
