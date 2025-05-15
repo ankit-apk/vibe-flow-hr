@@ -50,6 +50,22 @@ export const getProfile = async (userId: string) => {
   return response.data;
 };
 
+export const getActiveProfilesCount = async (): Promise<{ count: number }> => {
+  try {
+    const response = await apiClient.get<{ count: number }>('/profiles/count');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching active profiles count:', error);
+    throw error; // Re-throw error to be handled by the caller
+  }
+};
+
+// Service-specific query function
+export const runQuery = async <T = unknown>(query: string, params: unknown[] = []): Promise<T> => {
+  const response = await apiClient.post('/query', { text: query, params });
+  return response.data;
+};
+
 // createProfile is now handled by registerUser, but if you need a separate admin function:
 /*
 export const createProfile = async (profileData: {

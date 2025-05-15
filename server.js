@@ -133,23 +133,30 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     // req.user is populated by authenticateToken middleware (contains userId, role, email from JWT)
-    const profileResult = await pool.query(
-      `SELECT p.id, p.name, p.email, p.role, p.department, p.position, p.avatar_url, p.manager_id, p.created_at, p.updated_at,
-              lb.annual, lb.sick, lb.personal 
-       FROM profiles p
-       LEFT JOIN leave_balances lb ON p.id = lb.user_id
-       WHERE p.id = $1`,
-      [req.user.userId] // Use userId from JWT payload
-    );
-
-    if (profileResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User profile not found' });
+    if (!req.user || !req.user.userId) { // Ensure userId exists in token payload
+      return res.status(400).json({ message: 'User ID not found in token' });
     }
-    const userProfile = profileResult.rows[0];
-    res.json(userProfile);
+    // Fetch profile using userId from token, assuming profiles.id is the target
+    const { rows } = await pool.query('SELECT id, name AS full_name, role, email FROM profiles WHERE id = $1', [req.user.userId]);
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).json({ message: 'Profile not found for this user' });
+    }
   } catch (error) {
     console.error('Error fetching current user profile:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: 'Error fetching profile' });
+  }
+});
+
+// New endpoint to get count of active profiles
+app.get('/api/profiles/count', authenticateToken, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT COUNT(*) AS total_profiles FROM profiles');
+    res.json({ count: parseInt(rows[0].total_profiles, 10) });
+  } catch (error) {
+    console.error('Error fetching profiles count:', error);
+    res.status(500).json({ message: 'Error fetching profiles count' });
   }
 });
 
@@ -221,6 +228,42 @@ app.post('/api/profiles', authenticateToken, async (req, res) => {
   }
 });
 */
+
+// Get all profiles (example, might need adjustment based on actual profile schema)
+// Consider adding pagination and filtering in a real application
+app.get('/api/profiles', authenticateToken, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, user_id, full_name, role, email FROM profiles');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching profiles:', error);
+    res.status(500).json({ message: 'Error fetching profiles' });
+  }
+});
+
+// Get a single profile by ID
+app.get('/api/profiles/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.email, p.role, p.department, p.position, p.avatar_url, p.manager_id, p.created_at, p.updated_at,
+              lb.annual, lb.sick, lb.personal 
+       FROM profiles p
+       LEFT JOIN leave_balances lb ON p.id = lb.user_id
+       WHERE p.id = $1`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ error: 'Error fetching profile' });
+  }
+});
 
 const PORT = process.env.API_PORT || 3001;
 app.listen(PORT, () => {
