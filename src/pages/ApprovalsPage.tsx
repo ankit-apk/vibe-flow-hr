@@ -310,7 +310,7 @@ const ApprovalsPage: React.FC = () => {
                           </div>
                           <div className="capitalize">{expense.type}</div>
                           <div>{format(new Date(expense.date), "MMM dd, yyyy")}</div>
-                          <div>${expense.amount.toFixed(2)}</div>
+                          <div>₹{expense.amount.toFixed(2)}</div>
                           <div className="truncate max-w-[150px]">{expense.description}</div>
                           <div className="flex space-x-2">
                             <Button 

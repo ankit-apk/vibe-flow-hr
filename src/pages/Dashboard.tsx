@@ -131,7 +131,7 @@ const Dashboard: React.FC = () => {
           />
           <StatCard
             title="Total Approved Expenses"
-            value={`$${totalExpensesAmount.toFixed(2)}`}
+            value={`₹${totalExpensesAmount.toFixed(2)}`}
             icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
             description="Total sum of your approved expenses."
           />
@@ -224,7 +224,7 @@ const Dashboard: React.FC = () => {
                         <div>
                           <p className="font-semibold">{expense.type}: {expense.description}</p>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(expense.date), "PPP")} - Amount: ${typeof expense.amount === 'number' ? expense.amount.toFixed(2) : parseFloat(expense.amount as any).toFixed(2)}
+                            {format(new Date(expense.date), "PPP")} - Amount: ₹{typeof expense.amount === 'number' ? expense.amount.toFixed(2) : parseFloat(expense.amount as any).toFixed(2)}
                           </p>
                         </div>
                         <span className={`text-sm font-medium capitalize p-1.5 rounded-md flex items-center ${

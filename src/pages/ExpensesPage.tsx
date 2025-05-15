@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserExpenses, createExpense } from "@/services/expenseService";
 import { format } from "date-fns";
 import { Expense, ExpenseType } from "@/types/hrms";
-import { DollarSign, Plus, Filter } from "lucide-react";
+import { DollarSign, Plus, Filter, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -252,7 +252,7 @@ const ExpensesPage: React.FC = () => {
                           <FormLabel>Amount</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
                               <Input
                                 ref={field.ref}
                                 name={field.name}
@@ -294,7 +294,7 @@ const ExpensesPage: React.FC = () => {
                                   ) : (
                                     <span>Pick a date</span>
                                   )}
-                                  <DollarSign className="ml-auto h-4 w-4 opacity-50" />
+                                  <CalendarDays className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
@@ -359,7 +359,7 @@ const ExpensesPage: React.FC = () => {
             <CardTitle className="text-sm font-medium">Approved Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalApproved.toFixed(2)}</div>
+            <div className="text-2xl font-bold">₹{totalApproved.toFixed(2)}</div>
           </CardContent>
         </Card>
         
@@ -368,7 +368,7 @@ const ExpensesPage: React.FC = () => {
             <CardTitle className="text-sm font-medium">Pending Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalPending.toFixed(2)}</div>
+            <div className="text-2xl font-bold">₹{totalPending.toFixed(2)}</div>
           </CardContent>
         </Card>
       </div>
@@ -394,7 +394,7 @@ const ExpensesPage: React.FC = () => {
                   <div key={expense.id} className="grid grid-cols-5 p-4 text-sm">
                     <div className="capitalize">{expense.type}</div>
                     <div>{format(new Date(expense.date), "MMM dd, yyyy")}</div>
-                    <div>${expense.amount.toFixed(2)}</div>
+                    <div>₹{expense.amount.toFixed(2)}</div>
                     <div className="truncate max-w-[200px]">{expense.description}</div>
                     <div>
                       {expense.status === "pending" && (
