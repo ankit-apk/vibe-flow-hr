@@ -379,46 +379,48 @@ const ExpensesPage: React.FC = () => {
           <CardTitle>Expense Requests</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <div className="grid grid-cols-5 bg-muted/50 p-4 text-sm font-medium">
-              <div>Type</div>
-              <div>Date</div>
-              <div>Amount</div>
-              <div>Description</div>
-              <div>Status</div>
-            </div>
-            
-            {userExpenses.length > 0 ? (
-              <div className="divide-y">
-                {userExpenses.map((expense) => (
-                  <div key={expense.id} className="grid grid-cols-5 p-4 text-sm">
-                    <div className="capitalize">{expense.type}</div>
-                    <div>{format(new Date(expense.date), "MMM dd, yyyy")}</div>
-                    <div>₹{expense.amount.toFixed(2)}</div>
-                    <div className="truncate max-w-[200px]">{expense.description}</div>
-                    <div>
-                      {expense.status === "pending" && (
-                        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
-                          Pending
-                        </span>
-                      )}
-                      {expense.status === "approved" && (
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                          Approved
-                        </span>
-                      )}
-                      {expense.status === "rejected" && (
-                        <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">
-                          Rejected
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+          <div className="overflow-x-auto">
+            <div className="rounded-md border min-w-[600px]">
+              <div className="grid grid-cols-5 bg-muted/50 p-4 text-sm font-medium">
+                <div>Type</div>
+                <div>Date</div>
+                <div>Amount</div>
+                <div>Description</div>
+                <div>Status</div>
               </div>
-            ) : (
-              <div className="p-4 text-center text-muted-foreground">No expense requests found</div>
-            )}
+              
+              {userExpenses.length > 0 ? (
+                <div className="divide-y">
+                  {userExpenses.map((expense) => (
+                    <div key={expense.id} className="grid grid-cols-5 p-4 text-sm">
+                      <div className="capitalize">{expense.type}</div>
+                      <div>{format(new Date(expense.date), "MMM dd, yyyy")}</div>
+                      <div>₹{typeof expense.amount === 'number' ? expense.amount.toFixed(2) : parseFloat(expense.amount as any).toFixed(2)}</div>
+                      <div className="truncate max-w-[200px]">{expense.description}</div>
+                      <div>
+                        {expense.status === "pending" && (
+                          <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
+                            Pending
+                          </span>
+                        )}
+                        {expense.status === "approved" && (
+                          <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                            Approved
+                          </span>
+                        )}
+                        {expense.status === "rejected" && (
+                          <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">
+                            Rejected
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">No expense requests found</div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

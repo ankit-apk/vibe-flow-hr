@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Calendar, DollarSign, UserCheck, User } from "lucide-react";
@@ -34,12 +33,12 @@ const MobileNavigation: React.FC = () => {
       href: "/approvals",
       roles: ["manager", "admin"],
     },
-    {
-      icon: User,
-      label: "Profile",
-      href: "/profile",
-      roles: ["employee", "manager", "admin"],
-    },
+    // {
+    //   icon: User,
+    //   label: "Profile",
+    //   href: "/profile",
+    //   roles: ["employee", "manager", "admin"],
+    // },
   ];
 
   const filteredNavItems = navItems.filter(

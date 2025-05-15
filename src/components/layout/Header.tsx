@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
     <header className="bg-white border-b border-border h-16 flex items-center px-4 z-10">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:flex hidden">
+          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="flex md:hidden">
             <Menu className="h-5 w-5" />
           </Button>
           

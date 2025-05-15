@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MobileNavigation from "./MobileNavigation";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 type AppLayoutProps = {
   children: React.ReactNode;
@@ -34,7 +34,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header toggleSidebar={toggleSidebar} />
         
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className={cn("flex-1 overflow-y-auto p-4 md:p-6", isMobile && "pb-20")}>
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
