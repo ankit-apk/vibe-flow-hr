@@ -249,15 +249,15 @@ const LoginPage: React.FC = () => {
             </Tabs>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <div className="text-center text-sm text-muted-foreground mt-2">
+            {/* <div className="text-center text-sm text-muted-foreground mt-2">
               <p>For testing, you can create a new account or use:</p>
               <p>Email: john@example.com</p>
               <p>Password: password123</p>
               <p className="mt-1">(Create these accounts in Supabase)</p>
-            </div>
+            </div> */}
             
             {/* Demo Section */}
-            <div className="mt-4 border-t pt-4">
+            {/* <div className="mt-4 border-t pt-4">
               <h3 className="text-sm font-medium mb-2">Demo Access</h3>
               <div className="grid grid-cols-1 gap-2 text-xs">
                 <div className="p-2 bg-muted rounded-md">
@@ -273,7 +273,7 @@ const LoginPage: React.FC = () => {
                   <p className="text-muted-foreground mt-1">For manager registration, use invite code: <span className="font-mono bg-background px-1">MGR_CODE</span></p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </CardFooter>
         </Card>
       </div>
