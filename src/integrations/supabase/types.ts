@@ -18,6 +18,7 @@ export type Database = {
           id: string
           reviewed_at: string | null
           reviewed_by: string | null
+          remarks: string | null
           status: string
           type: string
           updated_at: string
@@ -31,6 +32,7 @@ export type Database = {
           id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          remarks?: string | null
           status?: string
           type: string
           updated_at?: string
@@ -44,6 +46,7 @@ export type Database = {
           id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          remarks?: string | null
           status?: string
           type?: string
           updated_at?: string
@@ -112,6 +115,7 @@ export type Database = {
           reason: string
           reviewed_at: string | null
           reviewed_by: string | null
+          remarks: string | null
           start_date: string
           status: string
           type: string
@@ -125,6 +129,7 @@ export type Database = {
           reason: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          remarks?: string | null
           start_date: string
           status?: string
           type: string
@@ -138,6 +143,7 @@ export type Database = {
           reason?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          remarks?: string | null
           start_date?: string
           status?: string
           type?: string

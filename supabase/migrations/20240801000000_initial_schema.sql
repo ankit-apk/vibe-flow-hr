@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.leaves (
   status TEXT NOT NULL DEFAULT 'pending',
   reviewed_by UUID REFERENCES public.profiles(id),
   reviewed_at TIMESTAMP WITH TIME ZONE,
+  remarks TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   status TEXT NOT NULL DEFAULT 'pending',
   reviewed_by UUID REFERENCES public.profiles(id),
   reviewed_at TIMESTAMP WITH TIME ZONE,
+  remarks TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -71,10 +73,10 @@ CREATE POLICY "Profiles: self or approver view"
   USING (
     -- you can always read your own row
     auth.uid() = id
-    -- managers and admins can read all rows
+    -- managers, hr, and admins can read all rows
     OR EXISTS (
       SELECT 1 FROM public.profiles AS p
-      WHERE p.id = auth.uid() AND p.role IN ('manager', 'admin')
+      WHERE p.id = auth.uid() AND p.role IN ('manager', 'admin', 'hr')
     )
   );
 
@@ -88,6 +90,15 @@ CREATE POLICY "Managers can view leave balances they manage"
   USING (auth.uid() IN (
     SELECT manager_id FROM public.profiles WHERE id = user_id
   ));
+
+-- HR can view and update all leave balances
+CREATE POLICY "HR can view all leave balances" 
+  ON public.leave_balances FOR SELECT 
+  USING ((SELECT role = 'hr' FROM public.profiles WHERE id = auth.uid()));
+
+CREATE POLICY "HR can update all leave balances" 
+  ON public.leave_balances FOR UPDATE 
+  USING ((SELECT role = 'hr' FROM public.profiles WHERE id = auth.uid()));
 
 -- Leaves policies
 CREATE POLICY "Users can view their own leaves" 
@@ -150,6 +161,26 @@ CREATE POLICY "Managers can view all expenses"
 CREATE POLICY "Managers can update all expenses"
   ON public.expenses FOR UPDATE
   USING ((SELECT role = 'manager' FROM public.profiles WHERE id = auth.uid()));
+
+-- HR can view all leaves
+CREATE POLICY "HR can view all leaves"
+  ON public.leaves FOR SELECT
+  USING ((SELECT role = 'hr' FROM public.profiles WHERE id = auth.uid()));
+
+-- HR can update all leaves
+CREATE POLICY "HR can update all leaves"
+  ON public.leaves FOR UPDATE
+  USING ((SELECT role = 'hr' FROM public.profiles WHERE id = auth.uid()));
+
+-- HR can view all expenses
+CREATE POLICY "HR can view all expenses"
+  ON public.expenses FOR SELECT
+  USING ((SELECT role = 'hr' FROM public.profiles WHERE id = auth.uid()));
+
+-- HR can update all expenses
+CREATE POLICY "HR can update all expenses"
+  ON public.expenses FOR UPDATE
+  USING ((SELECT role = 'hr' FROM public.profiles WHERE id = auth.uid()));
 
 -- Admins can view all leaves
 CREATE POLICY "Admins can view all leaves"

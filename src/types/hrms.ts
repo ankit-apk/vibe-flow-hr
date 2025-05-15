@@ -1,5 +1,4 @@
-
-export type Role = "employee" | "manager" | "admin";
+export type Role = "employee" | "manager" | "hr" | "admin";
 
 export type User = {
   id: string;
@@ -31,6 +30,7 @@ export type Leave = {
   status: LeaveStatus;
   reviewedBy?: string;
   reviewedAt?: string;
+  remarks?: string;
   createdAt: string;
 };
 
@@ -48,5 +48,6 @@ export type Expense = {
   status: ExpenseStatus;
   reviewedBy?: string;
   reviewedAt?: string;
+  remarks?: string;
   createdAt: string;
 };

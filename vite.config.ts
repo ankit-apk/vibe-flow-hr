@@ -19,4 +19,14 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Exclude Node.js modules from the build
+  optimizeDeps: {
+    exclude: ['pg', 'pg-native']
+  },
+  // Avoid trying to bundle Node.js-only modules
+  build: {
+    commonjsOptions: {
+      esmExternals: true,
+    },
+  },
 }));

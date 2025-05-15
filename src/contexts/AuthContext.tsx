@@ -1,17 +1,45 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { User, Role } from "../types/hrms";
-import { supabase } from "@/integrations/supabase/client";
+// import { supabase } from "@/integrations/supabase/client"; // Remove Supabase
 import { toast } from "@/components/ui/use-toast";
-import { mapProfileRowToUser, ProfileWithLeaveBalanceRow } from "@/types/supabase";
+// import { mapProfileRowToUser, ProfileWithLeaveBalanceRow } from "@/types/supabase"; // Remove Supabase types
 import { useNavigate } from "react-router-dom";
+import { loginUser, registerUser, fetchCurrentUser, executeQuery } from "@/services/apiClient";
+
+interface ApiUser extends Omit<User, 'leaveBalance'> { // API might not send leaveBalance directly with auth user
+  avatar_url?: string; // from db
+  manager_id?: string; // from db
+  // Fields that might come from /api/auth/me or /api/auth/login response
+  annual?: number;
+  sick?: number;
+  personal?: number;
+}
+
+const mapApiUserToUser = (apiUser: ApiUser): User => {
+  return {
+    id: apiUser.id,
+    name: apiUser.name,
+    email: apiUser.email,
+    role: apiUser.role as Role,
+    department: apiUser.department || '',
+    position: apiUser.position || '',
+    avatar: apiUser.avatar_url,
+    manager: apiUser.manager_id,
+    leaveBalance: {
+      annual: apiUser.annual || 0,
+      sick: apiUser.sick || 0,
+      personal: apiUser.personal || 0,
+    },
+  };
+};
 
 type AuthContextType = {
   currentUser: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, name: string, role?: Role) => Promise<boolean>;
-  logout: () => Promise<void>;
-  switchRole: (role: Role) => void;
+  register: (email: string, password: string, name: string, role?: Role, department?: string, position?: string) => Promise<boolean>;
+  logout: () => void; // No longer async as it's client-side
+  switchRole: (role: Role) => Promise<void>; // Still needs backend call
   loading: boolean;
 };
 
@@ -20,8 +48,8 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   login: async () => false,
   register: async () => false,
-  logout: async () => {},
-  switchRole: () => {},
+  logout: () => {},
+  switchRole: async () => {},
   loading: true,
 });
 
@@ -33,96 +61,62 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  // Helper to fetch and set user profile
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*, leave_balances(*)')
-        .eq('id', userId)
-        .single<ProfileWithLeaveBalanceRow>();
-      if (error || !profile) throw error || new Error('Profile not found');
-      const user = mapProfileRowToUser(profile);
-      if (profile.leave_balances) {
-        const balance = profile.leave_balances;
-        user.leaveBalance = {
-          annual: balance.annual,
-          sick: balance.sick,
-          personal: balance.personal,
-        };
+  const loadUserFromToken = async () => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      try {
+        setLoading(true);
+        const apiUser = await fetchCurrentUser(); // Uses token from apiClient interceptor
+        if (apiUser) {
+          setCurrentUser(mapApiUserToUser(apiUser as ApiUser));
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user with token:", error);
+        localStorage.removeItem('authToken'); // Invalid token
+        setCurrentUser(null);
+        setIsAuthenticated(false);
       }
-      setCurrentUser(user);
-      setIsAuthenticated(true);
-    } catch (err) {
-      console.error('Error loading user profile:', err);
-      setCurrentUser(null);
-      setIsAuthenticated(false);
+    } else {
+        setCurrentUser(null);
+        setIsAuthenticated(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    let subscription: any;
-    const initializeAuth = async () => {
-      setLoading(true);
-      // Load initial session if exists
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        await fetchUserProfile(session.user.id);
-      } else {
-        setIsAuthenticated(false);
-        setCurrentUser(null);
-      }
-      setLoading(false);
-
-      // Subscribe to auth state changes
-      const { data } = supabase.auth.onAuthStateChange(
-        async (_event, session) => {
-          setLoading(true);
-          if (session?.user) {
-            await fetchUserProfile(session.user.id);
-          } else {
-            setCurrentUser(null);
-            setIsAuthenticated(false);
-          }
-          setLoading(false);
-        }
-      );
-      subscription = data.subscription;
-    };
-    initializeAuth();
-    return () => subscription?.unsubscribe();
+    loadUserFromToken();
+    // No Supabase listener needed anymore
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
+      setLoading(true);
+      const response = await loginUser({ email, password }); // API call
+      if (response.user && response.token) {
+        localStorage.setItem('authToken', response.token);
+        setCurrentUser(mapApiUserToUser(response.user as ApiUser));
+        setIsAuthenticated(true);
         toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: error.message,
+          title: "Login successful",
+          description: "Welcome back!",
         });
-        return false;
+        setLoading(false);
+        return true;
+      } else {
+        throw new Error(response.error || 'Login failed');
       }
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
-      return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
       toast({
         variant: "destructive",
-        title: "Login error",
-        description: "An unexpected error occurred during login",
+        title: "Login failed",
+        description: error.message || "An unexpected error occurred during login",
       });
+      localStorage.removeItem('authToken');
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+      setLoading(false);
       return false;
     }
   };
@@ -131,47 +125,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     email: string, 
     password: string, 
     name: string,
-    role: Role = "employee"
+    role: Role = "employee",
+    department?: string, // Added for more complete registration
+    position?: string   // Added for more complete registration
   ): Promise<boolean> => {
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-            role,
-          },
-        },
-      });
-      
-      if (error) {
+      setLoading(true);
+      const response = await registerUser({ 
+        email, 
+        password, 
+        name, 
+        role, 
+        department: department || (role === 'hr' ? 'Human Resources' : 'General'),
+        position: position || (role === 'hr' ? 'HR Specialist' : role === 'manager' ? 'Manager' : 'Employee') 
+      }); // API call
+
+      if (response.user && response.token) {
+        localStorage.setItem('authToken', response.token);
+        setCurrentUser(mapApiUserToUser(response.user as ApiUser));
+        setIsAuthenticated(true);
         toast({
-          variant: "destructive",
-          title: "Registration failed",
-          description: error.message,
+          title: "Registration successful!",
+          description: "You are now registered and logged in.",
         });
-        return false;
+        setLoading(false);
+        return true;
+      } else {
+        throw new Error(response.error || 'Registration failed');
       }
-      
-      toast({
-        title: "Registration successful!",
-        description: "You are now registered and logged in.",
-      });
-      return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
       toast({
         variant: "destructive",
-        title: "Registration error",
-        description: "An unexpected error occurred during registration",
+        title: "Registration failed",
+        description: error.message || "An unexpected error occurred during registration",
       });
+      localStorage.removeItem('authToken');
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+      setLoading(false);
       return false;
     }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
+  const logout = () => { // No longer async
+    localStorage.removeItem('authToken');
+    setCurrentUser(null);
+    setIsAuthenticated(false);
     navigate("/login");
     toast({
       title: "Logged out",
@@ -179,57 +179,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  // For demo purposes - switch between roles
-  // In a real app, this would require admin privileges
   const switchRole = async (role: Role) => {
     if (!currentUser) return;
-    
+    setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role })
-        .eq('id', currentUser.id);
-      
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Role switch failed",
-          description: error.message,
-        });
-        return;
+      await executeQuery(
+        `UPDATE profiles SET role = $1 WHERE id = $2`,
+        [role, currentUser.id]
+      );
+      // Refresh user data to get updated role and potentially other info
+      const apiUser = await fetchCurrentUser();
+      if (apiUser) {
+         setCurrentUser(mapApiUserToUser(apiUser as ApiUser));
       }
-      
-      // Refresh the user to get updated role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*, leave_balances(*)')
-        .eq('id', currentUser.id)
-        .single<ProfileWithLeaveBalanceRow>();
-      
-      if (profile) {
-        const updatedUser = mapProfileRowToUser(profile);
-        if (profile.leave_balances) {
-          const balance = profile.leave_balances;
-          updatedUser.leaveBalance = {
-            annual: balance.annual,
-            sick: balance.sick,
-            personal: balance.personal
-          };
-        }
-        
-        setCurrentUser(updatedUser);
-        toast({
-          title: "Role switched",
-          description: `Switched to ${role} role`,
-        });
-      }
-    } catch (error) {
+      toast({
+        title: "Role switched",
+        description: `Switched to ${role} role`,
+      });
+    } catch (error: any) {
       console.error("Role switch error:", error);
       toast({
         variant: "destructive",
         title: "Role switch error",
-        description: "An unexpected error occurred",
+        description: error.message || "An unexpected error occurred",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

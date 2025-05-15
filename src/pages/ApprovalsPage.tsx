@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllPendingLeaves, updateLeaveStatus } from "@/services/leaveService";
 import { getAllPendingExpenses, updateExpenseStatus } from "@/services/expenseService";
-import { supabase } from "@/integrations/supabase/client";
+import { getProfile } from "@/services/apiClient";
 import { format } from "date-fns";
 import { Leave, Expense } from "@/types/hrms";
 import { Check, X, Calendar, DollarSign, User } from "lucide-react";
@@ -24,6 +24,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 const ApprovalsPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -32,11 +34,13 @@ const ApprovalsPage: React.FC = () => {
     type: "leave" | "expense";
     id: string;
     action: "approve" | "reject";
+    remarks: string;
   }>({
     open: false,
     type: "leave",
     id: "",
     action: "approve",
+    remarks: "",
   });
   const [refreshKey, setRefreshKey] = useState(0);
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -51,7 +55,6 @@ const ApprovalsPage: React.FC = () => {
       try {
         setIsLoading(true);
         
-        // Fetch all pending leaves and expenses for approver
         const [pendingLeaves, pendingExpenses] = await Promise.all([
           getAllPendingLeaves(),
           getAllPendingExpenses(),
@@ -60,28 +63,26 @@ const ApprovalsPage: React.FC = () => {
         setLeaves(pendingLeaves);
         setExpenses(pendingExpenses);
         
-        // Fetch employee information for all requests
         const userIds = new Set<string>();
         pendingLeaves.forEach(leave => userIds.add(leave.userId));
         pendingExpenses.forEach(expense => userIds.add(expense.userId));
         
         if (userIds.size > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, name')
-            .in('id', Array.from(userIds));
-            
-          if (profiles) {
-            const cache: Record<string, { name: string }> = {};
-            profiles.forEach(profile => {
+          const profilesData = await Promise.all(
+            Array.from(userIds).map(id => getProfile(id))
+          );
+
+          const cache: Record<string, { name: string }> = {};
+          profilesData.forEach(profile => {
+            if (profile && profile.id && profile.name) {
               cache[profile.id] = { name: profile.name };
-            });
-            setEmployeeCache(cache);
-          }
+            }
+          });
+          setEmployeeCache(cache);
         }
       } catch (error) {
-        console.error("Error fetching approvals:", error);
-        toast.error("Failed to load pending approvals");
+        console.error("Error fetching approvals or profiles:", error);
+        toast.error("Failed to load pending approvals or employee details");
       } finally {
         setIsLoading(false);
       }
@@ -90,7 +91,7 @@ const ApprovalsPage: React.FC = () => {
     fetchApprovals();
   }, [currentUser, refreshKey]);
   
-  if (!currentUser || (currentUser.role !== "manager" && currentUser.role !== "admin")) {
+  if (!currentUser || (currentUser.role !== "manager" && currentUser.role !== "admin" && currentUser.role !== "hr")) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
@@ -114,6 +115,7 @@ const ApprovalsPage: React.FC = () => {
       type: "leave",
       id: leaveId,
       action,
+      remarks: ""
     });
   };
   
@@ -123,6 +125,14 @@ const ApprovalsPage: React.FC = () => {
       type: "expense",
       id: expenseId,
       action,
+      remarks: ""
+    });
+  };
+
+  const handleRemarksChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setConfirmDialog({
+      ...confirmDialog,
+      remarks: e.target.value
     });
   };
   
@@ -132,18 +142,20 @@ const ApprovalsPage: React.FC = () => {
         await updateLeaveStatus(
           confirmDialog.id,
           confirmDialog.action === "approve" ? "approved" : "rejected",
-          currentUser.id
+          currentUser.id,
+          confirmDialog.remarks
         );
         toast.success(`Leave request ${confirmDialog.action}d successfully`);
       } else {
         await updateExpenseStatus(
           confirmDialog.id,
           confirmDialog.action === "approve" ? "approved" : "rejected",
-          currentUser.id
+          currentUser.id,
+          confirmDialog.remarks
         );
         toast.success(`Expense request ${confirmDialog.action}d successfully`);
       }
-      setConfirmDialog({ ...confirmDialog, open: false });
+      setConfirmDialog({ ...confirmDialog, open: false, remarks: "" });
       setRefreshKey(prev => prev + 1); // Force re-render to refresh data
     } catch (error) {
       console.error("Error processing request:", error);
@@ -321,17 +333,30 @@ const ApprovalsPage: React.FC = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog - Updated to include remarks */}
       <Dialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm {confirmDialog.action === "approve" ? "Approval" : "Rejection"}</DialogTitle>
+            <DialogTitle>
+              Confirm {confirmDialog.action === "approve" ? "Approval" : "Rejection"}
+            </DialogTitle>
             <DialogDescription>
               Are you sure you want to {confirmDialog.action} this {confirmDialog.type} request?
-              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          
+          <div className="my-4">
+            <Label htmlFor="remarks" className="text-sm font-medium">Remarks (Optional)</Label>
+            <Textarea 
+              id="remarks"
+              placeholder="Add any comments or feedback about this decision"
+              value={confirmDialog.remarks}
+              onChange={handleRemarksChange}
+              className="mt-2"
+            />
+          </div>
+          
+          <DialogFooter className="flex items-center justify-end space-x-2">
             <DialogClose asChild>
               <Button variant="outline">Cancel</Button>
             </DialogClose>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -11,7 +10,8 @@ import {
   ChevronLeft,
   UserCheck, 
   Settings,
-  Briefcase
+  Briefcase,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -32,25 +32,31 @@ const navItems: NavItem[] = [
     label: "Dashboard",
     icon: Home,
     href: "/",
-    roles: ["employee", "manager", "admin"],
+    roles: ["employee", "manager", "admin", "hr"],
   },
   {
     label: "Leave Management",
     icon: Calendar,
     href: "/leaves",
-    roles: ["employee", "manager", "admin"],
+    roles: ["employee", "manager", "admin", "hr"],
   },
   {
     label: "Expenses",
     icon: DollarSign,
     href: "/expenses",
-    roles: ["employee", "manager", "admin"],
+    roles: ["employee", "manager", "admin", "hr"],
   },
   {
     label: "Approvals",
     icon: UserCheck,
     href: "/approvals",
-    roles: ["manager", "admin"],
+    roles: ["manager", "admin", "hr"],
+  },
+  {
+    label: "Leave Balances",
+    icon: Users,
+    href: "/leave-balances",
+    roles: ["manager", "admin", "hr"],
   },
   {
     label: "Department",

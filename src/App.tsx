@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import LeavesPage from "@/pages/LeavesPage";
 import ExpensesPage from "@/pages/ExpensesPage";
 import ApprovalsPage from "@/pages/ApprovalsPage";
+import LeaveBalancesPage from "@/pages/LeaveBalancesPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
 
@@ -91,8 +91,17 @@ const AppWithAuth = () => {
       <Route 
         path="/approvals" 
         element={
-          <RoleRoute allowedRoles={["manager", "admin"]}>
+          <RoleRoute allowedRoles={["manager", "admin", "hr"]}>
             <ApprovalsPage />
+          </RoleRoute>
+        } 
+      />
+      
+      <Route 
+        path="/leave-balances" 
+        element={
+          <RoleRoute allowedRoles={["manager", "admin", "hr"]}>
+            <LeaveBalancesPage />
           </RoleRoute>
         } 
       />

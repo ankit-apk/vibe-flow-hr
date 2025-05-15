@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: vibe_flow_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-vibeflowdb}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibe_flow_api
+    ports:
+      - "${API_PORT:-3001}:3001"
+    environment:
+      VITE_PG_HOST: postgres
+      VITE_PG_PORT: 5432
+      VITE_PG_USER: ${POSTGRES_USER:-postgres}
+      VITE_PG_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      VITE_PG_DATABASE: ${POSTGRES_DB:-vibeflowdb}
+      API_PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-and-long-jwt-key}
+      NODE_ENV: development
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  pgdata: 

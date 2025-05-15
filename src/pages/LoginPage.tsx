@@ -29,6 +29,7 @@ type RegisterFormValues = z.infer<typeof registerFormSchema>;
 // Environment keys for signup role elevation
 const ADMIN_SIGNUP_CODE = import.meta.env.VITE_ADMIN_SIGNUP_KEY;
 const HR_SIGNUP_CODE = import.meta.env.VITE_HR_SIGNUP_KEY;
+const MANAGER_SIGNUP_CODE = import.meta.env.VITE_MANAGER_SIGNUP_KEY;
 
 const LoginPage: React.FC = () => {
   const { login, register } = useAuth();
@@ -72,7 +73,8 @@ const LoginPage: React.FC = () => {
       // Determine role based on invite code
       let signupRole: Role = "employee";
       if (values.inviteCode === ADMIN_SIGNUP_CODE) signupRole = "admin";
-      else if (values.inviteCode === HR_SIGNUP_CODE) signupRole = "manager";
+      else if (values.inviteCode === HR_SIGNUP_CODE) signupRole = "hr";
+      else if (values.inviteCode === MANAGER_SIGNUP_CODE) signupRole = "manager";
       const success = await register(
         values.email,
         values.password,
@@ -252,6 +254,25 @@ const LoginPage: React.FC = () => {
               <p>Email: john@example.com</p>
               <p>Password: password123</p>
               <p className="mt-1">(Create these accounts in Supabase)</p>
+            </div>
+            
+            {/* Demo Section */}
+            <div className="mt-4 border-t pt-4">
+              <h3 className="text-sm font-medium mb-2">Demo Access</h3>
+              <div className="grid grid-cols-1 gap-2 text-xs">
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="font-semibold">HR Role:</p>
+                  <p>Email: hr@example.com</p>
+                  <p>Password: password123</p>
+                  <p className="text-muted-foreground mt-1">For HR registration, use invite code: <span className="font-mono bg-background px-1">HR_CODE</span></p>
+                </div>
+                <div className="p-2 bg-muted rounded-md">
+                  <p className="font-semibold">Manager Role:</p>
+                  <p>Email: manager@example.com</p>
+                  <p>Password: password123</p>
+                  <p className="text-muted-foreground mt-1">For manager registration, use invite code: <span className="font-mono bg-background px-1">MGR_CODE</span></p>
+                </div>
+              </div>
             </div>
           </CardFooter>
         </Card>

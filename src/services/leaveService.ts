@@ -1,107 +1,100 @@
 import { supabase } from "@/integrations/supabase/client";
+import { query } from "@/db/client";
 import { Leave, LeaveType, LeaveStatus } from "@/types/hrms";
-import { Tables } from "@/integrations/supabase/types";
 
 // Get leaves for a specific user
 export const getUserLeaves = async (userId: string): Promise<Leave[]> => {
-  const { data, error } = await supabase
-    .from('leaves')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  try {
+    const result = await query(
+      `SELECT * FROM leaves WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
+    );
     
-  if (error) {
+    return result.rows.map(mapDbRowToLeave);
+  } catch (error) {
     console.error("Error fetching leaves:", error);
     throw error;
   }
-  
-  // Map database records to application types
-  return data.map(mapLeaveRowToLeave);
 };
 
 // Get all pending approvals for a manager
 export const getPendingLeavesForManager = async (managerId: string): Promise<Leave[]> => {
-  // First get all users managed by this manager
-  const { data: managedUsers, error: userError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('manager_id', managerId);
+  try {
+    // First get all users managed by this manager
+    const managedUsersResult = await query(
+      `SELECT id FROM profiles WHERE manager_id = $1`,
+      [managerId]
+    );
     
-  if (userError) {
-    console.error("Error fetching managed users:", userError);
-    throw userError;
-  }
-  
-  const userIds = managedUsers.map(user => user.id);
-  
-  if (userIds.length === 0) return [];
-  
-  // Then get all pending leaves for those users
-  const { data: leaves, error: leavesError } = await supabase
-    .from('leaves')
-    .select('*')
-    .in('user_id', userIds)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+    const userIds = managedUsersResult.rows.map(user => user.id);
     
-  if (leavesError) {
-    console.error("Error fetching pending leaves:", leavesError);
-    throw leavesError;
+    if (userIds.length === 0) return [];
+    
+    // Then get all pending leaves for those users
+    const leavesResult = await query(
+      `SELECT * FROM leaves 
+       WHERE user_id = ANY($1) 
+       AND status = 'pending' 
+       ORDER BY created_at DESC`,
+      [userIds]
+    );
+    
+    return leavesResult.rows.map(mapDbRowToLeave);
+  } catch (error) {
+    console.error("Error fetching pending leaves:", error);
+    throw error;
   }
-  
-  return leaves.map(mapLeaveRowToLeave);
 };
 
 // Create a new leave request
 export const createLeave = async (leave: Omit<Leave, 'id' | 'createdAt' | 'status'>): Promise<Leave> => {
-  const { data, error } = await supabase
-    .from('leaves')
-    .insert({
-      user_id: leave.userId,
-      type: leave.type,
-      start_date: leave.startDate,
-      end_date: leave.endDate,
-      reason: leave.reason,
-      status: 'pending'
-    })
-    .select()
-    .single();
+  try {
+    const result = await query(
+      `INSERT INTO leaves (
+         user_id, type, start_date, end_date, reason, status
+       ) VALUES ($1, $2, $3, $4, $5, 'pending')
+       RETURNING *`,
+      [
+        leave.userId,
+        leave.type,
+        leave.startDate,
+        leave.endDate,
+        leave.reason
+      ]
+    );
     
-  if (error) {
+    return mapDbRowToLeave(result.rows[0]);
+  } catch (error) {
     console.error("Error creating leave:", error);
     throw error;
   }
-  
-  return mapLeaveRowToLeave(data);
 };
 
 // Update leave status
 export const updateLeaveStatus = async (
   leaveId: string, 
   status: "approved" | "rejected", 
-  reviewerId: string
+  reviewerId: string,
+  remarks?: string
 ): Promise<Leave> => {
-  const { data, error } = await supabase
-    .from('leaves')
-    .update({
-      status,
-      reviewed_by: reviewerId,
-      reviewed_at: new Date().toISOString()
-    })
-    .eq('id', leaveId)
-    .select()
-    .single();
+  try {
+    const result = await query(
+      `UPDATE leaves 
+       SET status = $1, reviewed_by = $2, reviewed_at = $3, remarks = $4
+       WHERE id = $5
+       RETURNING *`,
+      [status, reviewerId, new Date().toISOString(), remarks || null, leaveId]
+    );
     
-  if (error) {
+    return mapDbRowToLeave(result.rows[0]);
+  } catch (error) {
     console.error("Error updating leave status:", error);
     throw error;
   }
-  
-  return mapLeaveRowToLeave(data);
 };
 
 // Helper function to map database row to application type
-const mapLeaveRowToLeave = (row: Tables<'leaves'>): Leave => ({
+const mapDbRowToLeave = (row: any): Leave => ({
   id: row.id,
   userId: row.user_id,
   type: row.type as LeaveType,
@@ -111,19 +104,23 @@ const mapLeaveRowToLeave = (row: Tables<'leaves'>): Leave => ({
   status: row.status as LeaveStatus,
   reviewedBy: row.reviewed_by || undefined,
   reviewedAt: row.reviewed_at || undefined,
+  remarks: row.remarks || undefined,
   createdAt: row.created_at
 });
 
-// Export a helper to fetch all pending leaves (for admins)
+// Export a helper to fetch all pending leaves (for admins and HR)
 export const getAllPendingLeaves = async (): Promise<Leave[]> => {
-  const { data, error } = await supabase
-    .from('leaves')
-    .select('*')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
-  if (error) {
+  try {
+    const result = await query(
+      `SELECT * FROM leaves 
+       WHERE status = 'pending' 
+       ORDER BY created_at DESC`,
+      []
+    );
+    
+    return result.rows.map(mapDbRowToLeave);
+  } catch (error) {
     console.error("Error fetching all pending leaves:", error);
     throw error;
   }
-  return data.map(mapLeaveRowToLeave);
 }; 

@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -84,14 +85,14 @@ const ExpensesPage: React.FC = () => {
         
         setUserExpenses(filteredExpenses);
         
-        // Calculate totals
+        // Calculate totals, ensuring amount is a number
         setTotalApproved(expenses
           .filter(expense => expense.status === "approved")
-          .reduce((sum, expense) => sum + expense.amount, 0));
+          .reduce((sum, expense) => sum + Number(expense.amount), 0)); // Ensure Number conversion
         
         setTotalPending(expenses
           .filter(expense => expense.status === "pending")
-          .reduce((sum, expense) => sum + expense.amount, 0));
+          .reduce((sum, expense) => sum + Number(expense.amount), 0)); // Ensure Number conversion
       } catch (error) {
         console.error("Error fetching expenses:", error);
         toast.error("Failed to fetch expense requests");
@@ -110,7 +111,7 @@ const ExpensesPage: React.FC = () => {
     resolver: zodResolver(expenseFormSchema),
     defaultValues: {
       type: "travel",
-      amount: undefined,
+      amount: undefined, // Revert to undefined, will fix input binding
       description: "",
       date: new Date(),
     },
@@ -123,28 +124,28 @@ const ExpensesPage: React.FC = () => {
       await createExpense({
         userId: currentUser.id,
         type: values.type,
-        amount: values.amount,
+        amount: values.amount, // Zod schema coerces this to number
         date: values.date.toISOString().split('T')[0],
         description: values.description,
       });
       
       toast.success("Expense submitted successfully");
       setDialogOpen(false);
-      form.reset();
+      form.reset(); // This will reset to new defaultValues including amount
       
       // Refresh the expenses list
       const updatedExpenses = await getUserExpenses(currentUser.id);
       const filteredExpenses = updatedExpenses.filter(expense => !filter || expense.status === filter);
       setUserExpenses(filteredExpenses);
       
-      // Update totals
+      // Update totals, ensuring amount is a number
       setTotalApproved(updatedExpenses
         .filter(expense => expense.status === "approved")
-        .reduce((sum, expense) => sum + expense.amount, 0));
+        .reduce((sum, expense) => sum + Number(expense.amount), 0)); // Ensure Number conversion
       
       setTotalPending(updatedExpenses
         .filter(expense => expense.status === "pending")
-        .reduce((sum, expense) => sum + expense.amount, 0));
+        .reduce((sum, expense) => sum + Number(expense.amount), 0)); // Ensure Number conversion
     } catch (error) {
       console.error("Error creating expense:", error);
       toast.error("Failed to submit expense");
@@ -207,6 +208,9 @@ const ExpensesPage: React.FC = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Submit New Expense</DialogTitle>
+                <DialogDescription>
+                  Fill in the details below to submit a new expense request.
+                </DialogDescription>
               </DialogHeader>
               
               <Form {...form}>
@@ -248,11 +252,19 @@ const ExpensesPage: React.FC = () => {
                           <FormLabel>Amount</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                               <Input
+                                ref={field.ref}
+                                name={field.name}
+                                onBlur={field.onBlur}
+                                type="number"
                                 placeholder="0.00"
                                 className="pl-8"
-                                {...field}
+                                value={field.value === undefined || field.value === null || isNaN(Number(field.value)) ? '' : String(field.value)}
+                                onChange={(e) => {
+                                  const stringValue = e.target.value;
+                                  field.onChange(stringValue === '' ? undefined : stringValue);
+                                }}
                               />
                             </div>
                           </FormControl>
