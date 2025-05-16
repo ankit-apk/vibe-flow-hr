@@ -33,20 +33,14 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   };
 
   return (
-    <header className="bg-white border-b border-border h-16 flex items-center px-4 z-10">
+    <header className="bg-white border-b-2 border-happinest-green h-16 flex items-center px-4 z-10 shadow-sm">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="flex md:hidden">
+          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="flex md:hidden text-happinest-green">
             <Menu className="h-5 w-5" />
           </Button>
           
-          {isMobile && (
-            <h1 className="text-xl font-semibold text-hrms-700">HRMS</h1>
-          )}
-          
-          {!isMobile && (
-            <h1 className="text-xl font-semibold text-hrms-700">HRMS Dashboard</h1>
-          )}
+          <h1 className="text-xl font-semibold text-happinest-green">HR Management</h1>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -57,9 +51,9 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-2">
+              <Button variant="ghost" className="flex items-center space-x-2 text-gray-700">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-hrms-500 text-white">
+                  <AvatarFallback className="bg-happinest-green text-white">
                     {currentUser && currentUser.name ? getInitials(currentUser.name) : getInitials()}
                   </AvatarFallback>
                 </Avatar>

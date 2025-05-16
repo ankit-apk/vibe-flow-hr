@@ -91,17 +91,27 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       <div className="h-16 border-b border-border flex items-center px-4 justify-between">
         <div className="flex items-center">
           {!collapsed && (
-            <span className="text-xl font-bold text-hrms-700 ml-2">HRMS</span>
+            <div className="flex items-center">
+              <img 
+                src="https://happinestindia.com/Assets/logo.svg" 
+                alt="Happinest Logo" 
+                className="h-8 w-auto"
+              />
+            </div>
           )}
           {collapsed && (
-            <span className="text-xl font-bold text-hrms-700">HR</span>
+            <img 
+              src="https://happinestindia.com/Assets/logo.svg" 
+              alt="Happinest Logo" 
+              className="h-8 w-auto"
+            />
           )}
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleSidebar}
-          className="text-muted-foreground"
+          className="text-happinest-green hover:bg-gray-100"
         >
           {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
@@ -116,11 +126,11 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
               className={cn(
                 "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 location.pathname === item.href
-                  ? "bg-hrms-100 text-hrms-700"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-accent text-happinest-green"
+                  : "text-gray-700 hover:bg-accent hover:text-happinest-green"
               )}
             >
-              <item.icon className={cn("h-5 w-5", location.pathname === item.href ? "text-hrms-500" : "")} />
+              <item.icon className={cn("h-5 w-5", location.pathname === item.href ? "text-happinest-green" : "text-gray-500")} />
               {!collapsed && <span className="ml-3">{item.label}</span>}
             </Link>
           ))}
@@ -131,8 +141,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
         <div className="flex items-center">
           {!collapsed && (
             <div>
-              <p className="text-sm font-medium">{currentUser?.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{currentUser?.role}</p>
+              <p className="text-sm font-medium text-gray-800">{currentUser?.name}</p>
+              <p className="text-xs text-gray-500 capitalize">{currentUser?.role}</p>
             </div>
           )}
         </div>

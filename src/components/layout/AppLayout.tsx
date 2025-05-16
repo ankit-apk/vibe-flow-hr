@@ -65,7 +65,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header toggleSidebar={toggleSidebar} />
         
-        <main className={cn("flex-1 overflow-y-auto", isMobile ? "p-4 pb-20" : "p-6")}>
+        <main className={cn("flex-1 overflow-y-auto bg-gray-50", isMobile ? "p-4 pb-20" : "p-6")}>
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

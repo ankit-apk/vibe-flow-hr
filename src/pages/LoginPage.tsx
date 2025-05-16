@@ -93,189 +93,168 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-hrms-100 to-background">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-white to-happinest-yellow/20">
       <div className="w-full max-w-md px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-hrms-700">HRMS</h1>
-          <p className="text-muted-foreground mt-2">Human Resource Management System</p>
+          <div className="flex justify-center mb-4">
+            <img 
+              src="https://happinestindia.com/Assets/logo.svg" 
+              alt="Happinest Logo" 
+              className="h-12 w-auto"
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-happinest-green">Vibe Flow HR</h1>
+          <p className="text-gray-600 mt-2">Human Resource Management System</p>
         </div>
         
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl">Welcome</CardTitle>
-            <CardDescription>
-              Access your HRMS account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs
-              value={activeTab}
-              onValueChange={(value) => setActiveTab(value as "login" | "register")}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter your email" 
-                              {...field} 
-                              autoComplete="email"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="••••••••" 
-                              {...field} 
-                              autoComplete="current-password"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Signing in..." : "Sign In"}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter your full name" 
-                              {...field} 
-                              autoComplete="name"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter your email" 
-                              {...field} 
-                              autoComplete="email"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="password" 
-                              placeholder="••••••••" 
-                              {...field} 
-                              autoComplete="new-password"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registerForm.control}
-                      name="inviteCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Invite Code (optional)</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter invite code"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Registering..." : "Register"}
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <CardFooter className="flex flex-col">
-            {/* <div className="text-center text-sm text-muted-foreground mt-2">
-              <p>For testing, you can create a new account or use:</p>
-              <p>Email: john@example.com</p>
-              <p>Password: password123</p>
-              <p className="mt-1">(Create these accounts in Supabase)</p>
-            </div> */}
+        <div className="login-container">
+          <div className="space-y-1 mb-6">
+            <h2 className="text-2xl font-semibold text-happinest-green">Welcome Back</h2>
+            <p className="text-gray-600">
+              Access your HR management account
+            </p>
+          </div>
+          
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as "login" | "register")}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
             
-            {/* Demo Section */}
-            {/* <div className="mt-4 border-t pt-4">
-              <h3 className="text-sm font-medium mb-2">Demo Access</h3>
-              <div className="grid grid-cols-1 gap-2 text-xs">
-                <div className="p-2 bg-muted rounded-md">
-                  <p className="font-semibold">HR Role:</p>
-                  <p>Email: hr@example.com</p>
-                  <p>Password: password123</p>
-                  <p className="text-muted-foreground mt-1">For HR registration, use invite code: <span className="font-mono bg-background px-1">HR_CODE</span></p>
-                </div>
-                <div className="p-2 bg-muted rounded-md">
-                  <p className="font-semibold">Manager Role:</p>
-                  <p>Email: manager@example.com</p>
-                  <p>Password: password123</p>
-                  <p className="text-muted-foreground mt-1">For manager registration, use invite code: <span className="font-mono bg-background px-1">MGR_CODE</span></p>
-                </div>
-              </div>
-            </div> */}
-          </CardFooter>
-        </Card>
+            <TabsContent value="login">
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter your email" 
+                            {...field} 
+                            autoComplete="email"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="••••••••" 
+                            {...field} 
+                            autoComplete="current-password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" variant="happinest" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+            
+            <TabsContent value="register">
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                  <FormField
+                    control={registerForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter your full name" 
+                            {...field} 
+                            autoComplete="name"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter your email" 
+                            {...field} 
+                            autoComplete="email"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password" 
+                            placeholder="••••••••" 
+                            {...field} 
+                            autoComplete="new-password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="inviteCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Invite Code (optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter invite code"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" variant="happinest" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Registering..." : "Register"}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
