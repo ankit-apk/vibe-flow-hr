@@ -38,5 +38,32 @@ services:
       - .:/usr/src/app
       - /usr/src/app/node_modules
 
+  frontend:
+    image: node:20-alpine
+    container_name: vibe_flow_frontend
+    working_dir: /usr/src/app
+    command: sh -c "npm run dev"
+    ports:
+      - "8080:8080"
+    environment:
+      - VITE_API_URL=/api
+      - NODE_ENV=development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: vibe_flow_nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+
 volumes:
   pgdata: 

@@ -9,6 +9,7 @@ This project uses a custom backend and PostgreSQL, all managed with Docker Compo
 - **Backend**: Express.js API handling business logic and authentication (JWT-based).
 - **Database**: PostgreSQL running in a Docker container.
 - **Frontend**: React + Vite.
+- **Nginx**: Reverse proxy to route requests to the appropriate service.
 
 ## Setup
 
@@ -38,6 +39,35 @@ This project uses a custom backend and PostgreSQL, all managed with Docker Compo
 5.  **Accessing the Application**:
     - The API server will be available at `http://localhost:3001` (or your `API_PORT`).
     - The Vite frontend (if you run it separately) typically runs on `http://localhost:8080`.
+    - With Nginx: Both services are available through `http://localhost` with the API at `/api`.
+
+## Development with ngrok
+
+To expose your application through a single ngrok URL (making it accessible from the internet):
+
+1. **Install ngrok** from https://ngrok.com/download if you haven't already
+
+2. **Run the ngrok setup script**:
+
+   ```bash
+   ./scripts/ngrok-setup.sh
+   ```
+
+3. **What this does**:
+
+   - Starts all services with Docker Compose
+   - Creates an ngrok tunnel to port 80 (Nginx)
+   - Displays the public URL for your application
+   - Both frontend and API will be accessible through this single URL
+
+4. **Using your ngrok URL**:
+
+   - Frontend UI: Access directly at the ngrok URL (e.g., `https://xxxx-xx-xx-xxx-xx.ngrok.io`)
+   - API endpoints: Available at `ngrok-url/api` (e.g., `https://xxxx-xx-xx-xxx-xx.ngrok.io/api`)
+
+5. **Updating frontend environment**:
+   - The script will show instructions to create a `.env.local` file with the correct API URL
+   - This ensures your frontend can communicate with the API through the ngrok tunnel
 
 ## Development
 
