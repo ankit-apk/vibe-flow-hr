@@ -14,6 +14,13 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
@@ -32,17 +39,20 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-and-long-jwt-key}
       NODE_ENV: development
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
+    networks:
+      - app-network
 
   frontend:
     image: node:20-alpine
     container_name: vibe_flow_frontend
     working_dir: /usr/src/app
-    command: sh -c "npm run dev"
+    command: sh -c "npm install && npm run dev"
     ports:
       - "8080:8080"
     environment:
@@ -52,6 +62,8 @@ services:
       - .:/usr/src/app
       - /usr/src/app/node_modules
     restart: unless-stopped
+    networks:
+      - app-network
 
   nginx:
     image: nginx:alpine
@@ -64,6 +76,13 @@ services:
       - api
       - frontend
     restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
-  pgdata: 
+  pgdata:
+
+
+networks:
+  app-network:
+    driver: bridge
